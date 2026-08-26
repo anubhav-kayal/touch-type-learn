@@ -52,6 +52,7 @@ blob-report
 # supabase local
 supabase/.temp
 supabase/.branches
+.pnpm-store
 
 # vercel / deploy
 .vercel

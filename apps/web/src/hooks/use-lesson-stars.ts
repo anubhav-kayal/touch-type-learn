@@ -1,8 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { readStars, subscribeProgress } from "@/lib/lesson-progress";
+import {
+  getServerStarsSnapshot,
+  readStars,
+  subscribeProgress,
+} from "@/lib/lesson-progress";
 
 export function useLessonStars(): Record<string, number> {
-  return useSyncExternalStore(subscribeProgress, readStars, () => ({}));
+  return useSyncExternalStore(subscribeProgress, readStars, getServerStarsSnapshot);
 }

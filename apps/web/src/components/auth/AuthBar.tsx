@@ -3,6 +3,7 @@
 import { signOut } from "@/app/actions/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/client";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -16,13 +17,15 @@ export function AuthBar() {
       return;
     }
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
+    void supabase.auth.getUser().then(({ data }) => {
       setEmail(data.user?.email ?? null);
       setReady(true);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
-    });
+    const { data } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        setEmail(session?.user?.email ?? null);
+      },
+    );
     return () => data.subscription.unsubscribe();
   }, [configured]);
 

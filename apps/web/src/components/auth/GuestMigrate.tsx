@@ -9,6 +9,7 @@ import {
 } from "@/lib/guest-progress";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/client";
+import type { AuthChangeEvent } from "@supabase/supabase-js";
 import { useEffect } from "react";
 
 export function GuestMigrate() {
@@ -47,7 +48,7 @@ export function GuestMigrate() {
       }
     });
 
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    const { data } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event === "SIGNED_IN") {
         void syncForUser();
       }
