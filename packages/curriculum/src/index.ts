@@ -1,19 +1,31 @@
-/**
- * Curriculum package public API.
- * Worlds and lessons land in Phase 3.
- */
+export { PACKAGE_NAME, WORLD_IDS } from "./types";
+export type {
+  AssistanceLevel,
+  Exercise,
+  ExerciseType,
+  IntroductionExercise,
+  Lesson,
+  TypingExercise,
+  World,
+  WorldId,
+  WorldStatus,
+} from "./types";
+export {
+  BOTTOM_ROW_LETTERS,
+  HOME_ROW_KEYS,
+  TOP_ROW_LETTERS,
+} from "./types";
 
-export const PACKAGE_NAME = "@keypath/curriculum";
-
-export const WORLD_IDS = [
-  "world-1",
-  "world-2",
-  "world-3",
-  "world-4",
-  "world-5",
-  "world-6",
-  "world-7",
-  "world-8",
-] as const;
-
-export type WorldId = (typeof WORLD_IDS)[number];
+export {
+  assertAllowedKeys,
+  collectDisallowedGraphemes,
+  isTypingExercise,
+} from "./allowedKeys";
+export { alternate, repeats, tokens, typing } from "./generate";
+export {
+  getCurrentLessonId,
+  getNextLessonId,
+  isLessonUnlocked,
+  listPlayableLessons,
+} from "./progress";
+export { getLesson, getWorld, getWorlds, LESSON_ALIASES, WORLDS } from "./catalog";
