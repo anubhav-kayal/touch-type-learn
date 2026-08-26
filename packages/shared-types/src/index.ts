@@ -15,4 +15,13 @@ export interface LessonAttemptSummary {
   stars: number;
 }
 
+export type {
+  GuestKeyStat,
+  GuestLessonProgress,
+  GuestSnapshot,
+  GuestStreak,
+  LessonAttemptPayload,
+  ProgressSnapshot,
+} from "./progress";
+
 export const PACKAGE_NAME = "@keypath/shared-types";
