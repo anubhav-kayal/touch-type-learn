@@ -1,5 +1,4 @@
-# Minimal local config. Expand with `supabase init` / CLI defaults in Phase 4
-# if you need the full generated file.
+# Local stack for Keypath. Expand with `supabase init` if you need extra CLI defaults.
 
 project_id = "keypath-local"
 
@@ -19,4 +18,13 @@ port = 54323
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000"]
+additional_redirect_urls = ["http://localhost:3000", "http://localhost:3000/auth/callback"]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+double_confirm_changes = false
+
+[auth.external.google]
+enabled = false
