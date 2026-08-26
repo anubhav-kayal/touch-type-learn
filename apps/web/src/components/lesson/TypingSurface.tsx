@@ -82,7 +82,7 @@ export function TypingSurface({
       onKeyDown={onKeyDown}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      className="flex w-full max-w-4xl flex-col items-center gap-10 rounded-3xl px-4 py-6 outline-none focus-visible:ring-2 focus-visible:ring-bump/70"
+      className="flex w-full max-w-6xl flex-col items-center gap-8 px-3 py-4 outline-none focus-visible:ring-2 focus-visible:ring-bump/70 sm:px-4"
     >
       <TypingPrompt
         expected={snapshot.expected}

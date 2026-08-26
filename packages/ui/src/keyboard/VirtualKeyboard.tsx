@@ -5,7 +5,6 @@ import {
 } from "@keypath/typing-engine";
 import type { FingerAssignment } from "@keypath/typing-engine";
 import { resolveKeyState } from "./resolveKeyState";
-import type { VirtualKeyState } from "./resolveKeyState";
 
 export interface VirtualKeyboardProps {
   targetGrapheme: string | null;
@@ -14,49 +13,29 @@ export interface VirtualKeyboardProps {
   pressedBaseKey: string | null;
 }
 
-const KEY_STATE_CLASS: Record<VirtualKeyState, string> = {
-  default:
-    "bg-keycap text-legend border-black/8 shadow-[0_2px_0_rgba(21,32,43,0.12)]",
-  target:
-    "bg-bump text-ink border-bump-ink/20 shadow-[0_2px_0_rgba(152,118,12,0.45)]",
-  pressed: "bg-ink text-desk translate-y-[2px] shadow-none border-ink",
-  finger: "bg-keycap text-ink border-bump/70 shadow-[0_2px_0_rgba(21,32,43,0.12)]",
-  incorrect:
-    "bg-incorrect/15 text-incorrect border-incorrect shadow-[0_2px_0_rgba(179,58,58,0.35)]",
-  shift:
-    "bg-bump/40 text-ink border-bump shadow-[0_2px_0_rgba(152,118,12,0.3)]",
-};
-
 function KeyCap({
   id,
   label,
-  wide,
+  kind = "unit",
   bump,
   state,
 }: {
   id: string;
   label: string;
-  wide?: string;
+  kind?: "unit" | "shift" | "space";
   bump?: boolean;
-  state: VirtualKeyState;
+  state: string;
 }) {
   return (
     <div
       data-key={id}
       data-state={state}
-      className={[
-        "relative flex h-10 items-end justify-center rounded-[7px] border pb-1.5 font-mono text-[11px] font-medium leading-none",
-        wide ?? "w-8",
-        KEY_STATE_CLASS[state],
-      ].join(" ")}
+      className={["keypath-kb__key", kind === "unit" ? "" : `keypath-kb__key--${kind}`]
+        .filter(Boolean)
+        .join(" ")}
     >
       {label}
-      {bump ? (
-        <span
-          aria-hidden="true"
-          className="absolute top-1.5 left-1/2 h-1 w-2.5 -translate-x-1/2 rounded-full bg-bump-ink/70"
-        />
-      ) : null}
+      {bump ? <span className="keypath-kb__bump" aria-hidden="true" /> : null}
     </div>
   );
 }
@@ -80,42 +59,39 @@ export function VirtualKeyboard({
     });
 
   return (
-    <div className="flex w-full max-w-[44rem] flex-col items-center gap-1.5" aria-hidden="true">
-      <div className="flex gap-1">
-        {US_QWERTY_ROWS.number.map((key) => (
-          <KeyCap key={key} id={key} label={key} state={resolve(key)} />
-        ))}
-      </div>
-      <div className="flex gap-1 pl-4">
-        {US_QWERTY_ROWS.top.map((key) => (
-          <KeyCap key={key} id={key} label={key} state={resolve(key)} />
-        ))}
-      </div>
-      <div className="flex gap-1 pl-6">
-        {US_QWERTY_ROWS.home.map((key) => (
-          <KeyCap
-            key={key}
-            id={key}
-            label={key}
-            bump={(HOME_ROW_BUMP_KEYS as readonly string[]).includes(key)}
-            state={resolve(key)}
-          />
-        ))}
-      </div>
-      <div className="flex gap-1">
-        <KeyCap id="shift-left" label="shift" wide="w-14" state={resolve("shift-left")} />
-        {US_QWERTY_ROWS.bottom.map((key) => (
-          <KeyCap key={key} id={key} label={key} state={resolve(key)} />
-        ))}
-        <KeyCap
-          id="shift-right"
-          label="shift"
-          wide="w-14"
-          state={resolve("shift-right")}
-        />
-      </div>
-      <div className="flex w-full justify-center pt-0.5">
-        <KeyCap id=" " label="" wide="w-64" state={resolve(" ")} />
+    <div className="keypath-kb" aria-hidden="true" data-testid="virtual-keyboard">
+      <div className="keypath-kb__mat">
+        <div className="keypath-kb__row">
+          {US_QWERTY_ROWS.number.map((key) => (
+            <KeyCap key={key} id={key} label={key} state={resolve(key)} />
+          ))}
+        </div>
+        <div className="keypath-kb__row keypath-kb__row--top">
+          {US_QWERTY_ROWS.top.map((key) => (
+            <KeyCap key={key} id={key} label={key} state={resolve(key)} />
+          ))}
+        </div>
+        <div className="keypath-kb__row keypath-kb__row--home">
+          {US_QWERTY_ROWS.home.map((key) => (
+            <KeyCap
+              key={key}
+              id={key}
+              label={key}
+              bump={(HOME_ROW_BUMP_KEYS as readonly string[]).includes(key)}
+              state={resolve(key)}
+            />
+          ))}
+        </div>
+        <div className="keypath-kb__row">
+          <KeyCap id="shift-left" label="shift" kind="shift" state={resolve("shift-left")} />
+          {US_QWERTY_ROWS.bottom.map((key) => (
+            <KeyCap key={key} id={key} label={key} state={resolve(key)} />
+          ))}
+          <KeyCap id="shift-right" label="shift" kind="shift" state={resolve("shift-right")} />
+        </div>
+        <div className="keypath-kb__row">
+          <KeyCap id=" " label="" kind="space" state={resolve(" ")} />
+        </div>
       </div>
     </div>
   );

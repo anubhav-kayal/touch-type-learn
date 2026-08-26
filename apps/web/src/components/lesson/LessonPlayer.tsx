@@ -8,11 +8,14 @@ import {
 } from "@keypath/curriculum";
 import type { Lesson } from "@keypath/curriculum";
 import { calculateStars } from "@keypath/scoring";
+import type { GuestKeyStat } from "@keypath/shared-types";
 import { calculateAccuracy } from "@keypath/typing-engine";
-import type { TypingSnapshot } from "@keypath/typing-engine";
+import type { KeyStatSummary, TypingSnapshot } from "@keypath/typing-engine";
 import Link from "next/link";
 import { useState } from "react";
-import { recordStars } from "@/lib/lesson-progress";
+import { submitLessonAttempt } from "@/app/actions/progress";
+import { AuthBar } from "@/components/auth/AuthBar";
+import { recordGuestAttempt } from "@/lib/guest-progress";
 import { IntroCard } from "./IntroCard";
 import { ResultsCard } from "./ResultsCard";
 import type { LessonResultView } from "./ResultsCard";
@@ -44,7 +47,26 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       wpm: last?.wpm,
       targetWpm: lesson.targetWpm,
     });
-    recordStars(lesson.id, stars);
+    const keyStats = mergeKeyStats(all);
+    recordGuestAttempt({
+      lessonId: lesson.id,
+      stars,
+      wpm: last?.wpm ?? 0,
+      accuracy,
+      keyStats,
+    });
+    void submitLessonAttempt({
+      lessonId: lesson.id,
+      durationMs: all.reduce((sum, item) => sum + item.durationMs, 0),
+      wpm: last?.wpm ?? 0,
+      rawWpm: last?.rawWpm ?? 0,
+      accuracy,
+      consistency: last?.consistency ?? null,
+      errors,
+      correctedErrors: all.reduce((sum, item) => sum + item.correctedErrors, 0),
+      maxCombo: all.reduce((max, item) => Math.max(max, item.maxCombo), 0),
+      keyStats,
+    });
     setResult({
       accuracy,
       wpm: last?.wpm ?? 0,
@@ -93,9 +115,12 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
         >
           Keypath
         </Link>
-        <p className="font-mono text-xs tracking-[0.18em] text-legend uppercase">
-          {lesson.isBoss ? `Boss · ${lesson.title}` : lesson.title}
-        </p>
+        <div className="flex items-center gap-5">
+          <p className="font-mono text-xs tracking-[0.18em] text-legend uppercase">
+            {lesson.isBoss ? `Boss · ${lesson.title}` : lesson.title}
+          </p>
+          <AuthBar />
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
@@ -133,4 +158,44 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       </main>
     </div>
   );
+}
+
+function toGuestKeyStat(row: KeyStatSummary): GuestKeyStat {
+  return {
+    key: row.key,
+    attempts: row.attempts,
+    correct: row.correct,
+    errors: row.errors,
+    averageLatencyMs: row.averageLatencyMs,
+  };
+}
+
+function mergeKeyStats(snapshots: TypingSnapshot[]): Record<string, GuestKeyStat> {
+  const merged: Record<string, GuestKeyStat> = {};
+  for (const snapshot of snapshots) {
+    for (const row of Object.values(snapshot.keyStats)) {
+      const existing = merged[row.key];
+      if (!existing) {
+        merged[row.key] = toGuestKeyStat(row);
+        continue;
+      }
+      const attempts = existing.attempts + row.attempts;
+      let averageLatencyMs = existing.averageLatencyMs;
+      if (existing.averageLatencyMs !== null && row.averageLatencyMs !== null) {
+        averageLatencyMs =
+          (existing.averageLatencyMs * existing.attempts +
+            row.averageLatencyMs * row.attempts) / Math.max(attempts, 1);
+      } else {
+        averageLatencyMs = existing.averageLatencyMs ?? row.averageLatencyMs;
+      }
+      merged[row.key] = {
+        key: row.key,
+        attempts,
+        correct: existing.correct + row.correct,
+        errors: existing.errors + row.errors,
+        averageLatencyMs,
+      };
+    }
+  }
+  return merged;
 }

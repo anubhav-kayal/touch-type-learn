@@ -1,5 +1,6 @@
 import { ContinueLink } from "@/components/learn/ContinueLink";
 import { CourseMapView } from "@/components/learn/CourseMapView";
+import { AuthBar } from "@/components/auth/AuthBar";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -17,9 +18,12 @@ export default function LearnMapPage() {
         >
           Keypath
         </Link>
-        <ContinueLink className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink">
-          Continue
-        </ContinueLink>
+        <div className="flex items-center gap-5">
+          <ContinueLink className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink">
+            Continue
+          </ContinueLink>
+          <AuthBar />
+        </div>
       </header>
       <main className="mx-auto w-full max-w-xl flex-1 px-6 pb-16">
         <h1 className="mb-8 font-display text-4xl">Course map</h1>
