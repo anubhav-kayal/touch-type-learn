@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./keyboard.css";
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 
 :root {

@@ -1,3 +1,4 @@
+import { GuestMigrate } from "@/components/auth/GuestMigrate";
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
@@ -25,7 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${display.variable} ${mono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-desk text-ink">{children}</body>
+      <body className="flex min-h-full flex-col bg-desk text-ink">
+        <GuestMigrate />
+        {children}
+      </body>
     </html>
   );
 }

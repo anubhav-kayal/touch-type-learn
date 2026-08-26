@@ -1,12 +1,16 @@
 import { ContinueLink } from "@/components/learn/ContinueLink";
+import { AuthBar } from "@/components/auth/AuthBar";
 import Link from "next/link";
 
 export default function Home() {
   return (
     <main className="flex min-h-full flex-1 flex-col justify-between bg-desk px-8 py-10 text-ink">
-      <p className="font-mono text-xs tracking-[0.22em] text-legend uppercase">
-        Keypath
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-xs tracking-[0.22em] text-legend uppercase">
+          Keypath
+        </p>
+        <AuthBar />
+      </div>
       <div className="flex max-w-xl flex-col gap-6">
         <h1 className="font-display text-5xl leading-[1.05] tracking-tight sm:text-6xl">
           Find F and J.
