@@ -693,6 +693,12 @@ Planned after MVP (see BUILD_PLAN phases 8–12): expanded practice modes, Word 
 
 Record decisions here. Newest first.
 
+### ADR-016 — Isolated typing surface; Zustand for phase only
+
+**Decision:** The engine instance and live snapshot live in `TypingSurface`. Zustand stores `view`, `result`, and `runId` (retry remount). The virtual keyboard is in `@keypath/ui` and is `aria-hidden`; finger guidance is visible text.
+
+**Why:** Per-keystroke Zustand would rerender the shell. The keyboard is a visual aid, not a second source of typing truth.
+
 ### ADR-015 — Engine owns live metrics; one grapheme per expected slot
 
 **Decision:** `packages/typing-engine` computes WPM, accuracy, and consistency. Tests inject `now()`. Input is NFC grapheme clusters, one expected slot each. Characters not on US QWERTY (e.g. `₹`) have a `null` finger assignment.
@@ -789,7 +795,14 @@ Record decisions here. Newest first.
 
 ## Visual and UX direction (constraints)
 
-Detailed visual identity is implemented in the web app, not in this doc. Non-negotiables:
+Phase 2 identity (typing surface):
+
+- **Desk mat** `#D5DCE6`, **ink** `#15202B`, **keycap** `#F3F6FA`, **bump gold** `#C9A227`
+- Type: Bricolage Grotesque (UI) + IBM Plex Mono (prompt and key legends)
+- Signature: the F/J tactile bumps, reused as the current-character caret
+- Not cream/serif, not dark-neon terminal
+
+Non-negotiables:
 
 - Typing surface is quiet: no chrome, no toasts, no decorative motion on each key.
 - Motion is reserved for completion, stars, XP, world unlocks.

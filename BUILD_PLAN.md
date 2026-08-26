@@ -11,10 +11,10 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 ## Current status
 
-| Field        | Value                        |
-| ------------ | ---------------------------- |
-| Active phase | Phase 2 — Basic typing experience |
-| Last updated | 2026-08-26                        |
+| Field        | Value                         |
+| ------------ | ----------------------------- |
+| Active phase | Phase 3 — Curriculum system   |
+| Last updated | 2026-08-26                    |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–12                  |
 
@@ -192,7 +192,7 @@ Shipped 2026-08-26. `createTypingSession` + injected `createManualClock`. A char
 
 ## Phase 2 — Basic typing experience
 
-**Status:** `not started`
+**Status:** `done`
 
 ### Objective
 
@@ -210,11 +210,11 @@ A single-lesson experience that feels instant: prompt, caret, errors, keyboard, 
 
 ### Technical tasks
 
-- [ ] Isolate the typing surface so keystrokes do not rerender the shell
-- [ ] Zustand store: lesson session flags only
-- [ ] `packages/ui` keyboard driven by engine snapshot + finger map
-- [ ] Motion only on results enter
-- [ ] Fixture lesson in the web app or curriculum stub
+- [x] Isolate the typing surface so keystrokes do not rerender the shell
+- [x] Zustand store: lesson session flags only
+- [x] `packages/ui` keyboard driven by engine snapshot + finger map
+- [x] Motion only on results enter
+- [x] Fixture lesson in the web app or curriculum stub
 
 ### Database changes
 
@@ -239,6 +239,10 @@ RTL: renders prompt, marks wrong char, keyboard highlights target. Do not try to
 - React rerender cost — measure before memoizing everything
 - Focus management (`tabIndex`, capturing `keydown` on window vs hidden input)
 - IME composition (MVP: US English; ignore IME until it bites)
+
+### Phase notes
+
+Shipped 2026-08-26. Route: `/learn/home-row` (fixture `asdf jkl;`). Engine lives in TypingSurface state; Zustand only holds view/result/runId. Virtual keyboard in `@keypath/ui` uses `resolveKeyState` + engine finger map. F/J show tactile bumps; current character uses the same bump as a caret. Errors use color plus underline (no shake). Coarse-pointer notice is informational. RTL covers prompt, wrong-key state, target highlight, and completion. IME still ignored. Guest save is Phase 4.
 
 ---
 
