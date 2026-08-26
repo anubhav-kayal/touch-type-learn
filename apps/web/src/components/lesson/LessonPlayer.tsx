@@ -1,52 +1,135 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback } from "react";
+import {
+  getNextLessonId,
+  isTypingExercise,
+  listPlayableLessons,
+  getWorlds,
+} from "@keypath/curriculum";
+import type { Lesson } from "@keypath/curriculum";
+import { calculateStars } from "@keypath/scoring";
+import { calculateAccuracy } from "@keypath/typing-engine";
 import type { TypingSnapshot } from "@keypath/typing-engine";
-import { FIXTURE_LESSON } from "@/lessons/fixture";
-import { useLessonUiStore } from "@/stores/lesson-ui";
+import Link from "next/link";
+import { useState } from "react";
+import { recordStars } from "@/lib/lesson-progress";
+import { IntroCard } from "./IntroCard";
 import { ResultsCard } from "./ResultsCard";
+import type { LessonResultView } from "./ResultsCard";
 import { TypingSurface } from "./TypingSurface";
 
-export function LessonPlayer() {
-  const view = useLessonUiStore((state) => state.view);
-  const result = useLessonUiStore((state) => state.result);
-  const runId = useLessonUiStore((state) => state.runId);
-  const showResults = useLessonUiStore((state) => state.showResults);
-  const retry = useLessonUiStore((state) => state.retry);
+interface LessonPlayerProps {
+  lesson: Lesson;
+}
 
-  const onComplete = useCallback(
-    (snapshot: TypingSnapshot) => {
-      showResults(snapshot);
-    },
-    [showResults],
-  );
+type View = "exercise" | "results";
+
+export function LessonPlayer({ lesson }: LessonPlayerProps) {
+  const [exerciseIndex, setExerciseIndex] = useState(0);
+  const [runId, setRunId] = useState(0);
+  const [snapshots, setSnapshots] = useState<TypingSnapshot[]>([]);
+  const [view, setView] = useState<View>("exercise");
+  const [result, setResult] = useState<LessonResultView | null>(null);
+
+  const exercise = lesson.exercises[exerciseIndex];
+  const playable = listPlayableLessons(getWorlds());
+  const nextId = getNextLessonId(lesson.id, playable);
+
+  function finishLesson(all: TypingSnapshot[]) {
+    const correct = all.reduce((sum, item) => sum + item.correctKeystrokes, 0);
+    const errors = all.reduce((sum, item) => sum + item.errorKeystrokes, 0);
+    const last = all[all.length - 1];
+    const accuracy = calculateAccuracy(correct, errors);
+    const stars = calculateStars(accuracy, last?.consistency ?? null, {
+      wpm: last?.wpm,
+      targetWpm: lesson.targetWpm,
+    });
+    recordStars(lesson.id, stars);
+    setResult({
+      accuracy,
+      wpm: last?.wpm ?? 0,
+      consistency: last?.consistency ?? null,
+      errors,
+      maxCombo: all.reduce((max, item) => Math.max(max, item.maxCombo), 0),
+      stars,
+    });
+    setView("results");
+  }
+
+  function onTypingComplete(snapshot: TypingSnapshot) {
+    const all = [...snapshots, snapshot];
+    const isLast = exerciseIndex >= lesson.exercises.length - 1;
+    if (isLast) {
+      finishLesson(all);
+      return;
+    }
+    setSnapshots(all);
+    setExerciseIndex(exerciseIndex + 1);
+  }
+
+  function continueIntro() {
+    const isLast = exerciseIndex >= lesson.exercises.length - 1;
+    if (isLast) {
+      finishLesson(snapshots);
+      return;
+    }
+    setExerciseIndex(exerciseIndex + 1);
+  }
+
+  function retry() {
+    setExerciseIndex(0);
+    setSnapshots([]);
+    setResult(null);
+    setView("exercise");
+    setRunId((id) => id + 1);
+  }
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-desk text-ink">
       <header className="flex items-center justify-between px-6 py-5">
         <Link
-          href="/"
+          href="/learn"
           className="font-display text-sm tracking-wide text-legend hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bump"
         >
           Keypath
         </Link>
         <p className="font-mono text-xs tracking-[0.18em] text-legend uppercase">
-          {FIXTURE_LESSON.title}
+          {lesson.isBoss ? `Boss · ${lesson.title}` : lesson.title}
         </p>
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
         {view === "results" && result ? (
-          <ResultsCard result={result} onRetry={retry} />
-        ) : (
-          <TypingSurface
-            key={runId}
-            prompt={FIXTURE_LESSON.prompt}
-            inputMode={FIXTURE_LESSON.inputMode}
-            onComplete={onComplete}
+          <ResultsCard
+            result={result}
+            passed={result.stars >= 1}
+            nextLessonHref={
+              result.stars >= 1 && nextId ? `/learn/${nextId}` : null
+            }
+            onRetry={retry}
           />
-        )}
+        ) : exercise?.type === "introduction" ? (
+          <IntroCard
+            key={`${runId}-${exerciseIndex}`}
+            title={exercise.title}
+            body={exercise.body}
+            newKeys={lesson.newKeys}
+            onContinue={continueIntro}
+          />
+        ) : exercise && isTypingExercise(exercise) ? (
+          <div className="flex w-full flex-col items-center gap-4">
+            <p className="font-mono text-xs tracking-[0.18em] text-legend uppercase">
+              {exercise.type.replace("-", " ")}
+            </p>
+            <TypingSurface
+              key={`${runId}-${exerciseIndex}`}
+              prompt={exercise.prompt}
+              inputMode="forced-correction"
+              assistance={lesson.assistance}
+              onComplete={onTypingComplete}
+            />
+          </div>
+        ) : null}
       </main>
     </div>
   );

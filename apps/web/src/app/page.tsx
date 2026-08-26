@@ -1,3 +1,4 @@
+import { ContinueLink } from "@/components/learn/ContinueLink";
 import Link from "next/link";
 
 export default function Home() {
@@ -13,17 +14,22 @@ export default function Home() {
           Then never look down.
         </h1>
         <p className="max-w-md text-lg leading-relaxed text-legend">
-          Accuracy first. A quiet home-row drill to start building muscle memory
+          Accuracy first. A structured path from the home row to real sentences,
           on a physical keyboard.
         </p>
-        <Link
-          href="/learn/home-row"
-          className="w-fit rounded-full bg-ink px-6 py-3 font-display text-desk focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bump"
-        >
-          Start home row
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <ContinueLink className="w-fit rounded-full bg-ink px-6 py-3 font-display text-desk focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bump">
+            Continue learning
+          </ContinueLink>
+          <Link
+            href="/learn"
+            className="w-fit rounded-full bg-keycap px-6 py-3 font-display text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bump"
+          >
+            Course map
+          </Link>
+        </div>
       </div>
-      <p className="font-mono text-xs text-legend">World 1 · fixture lesson</p>
+      <p className="font-mono text-xs text-legend">World 1 · Finger Foundations</p>
     </main>
   );
 }

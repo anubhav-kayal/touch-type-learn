@@ -1,5 +1,6 @@
 "use client";
 
+import type { AssistanceLevel } from "@keypath/curriculum";
 import { createTypingSession } from "@keypath/typing-engine";
 import type { TypingSnapshot } from "@keypath/typing-engine";
 import { fingerLabel, pressedKeyFromEventKey, VirtualKeyboard } from "@keypath/ui";
@@ -11,10 +12,16 @@ import { TypingPrompt } from "./TypingPrompt";
 interface TypingSurfaceProps {
   prompt: string;
   inputMode: "forced-correction" | "free-flow";
+  assistance?: AssistanceLevel;
   onComplete: (snapshot: TypingSnapshot) => void;
 }
 
-export function TypingSurface({ prompt, inputMode, onComplete }: TypingSurfaceProps) {
+export function TypingSurface({
+  prompt,
+  inputMode,
+  assistance = "full",
+  onComplete,
+}: TypingSurfaceProps) {
   const [session] = useState(() => createTypingSession({ expected: prompt, inputMode }));
   const [snapshot, setSnapshot] = useState<TypingSnapshot>(() => session.getSnapshot());
   const [pressedBaseKey, setPressedBaseKey] = useState<string | null>(null);
@@ -60,6 +67,10 @@ export function TypingSurface({ prompt, inputMode, onComplete }: TypingSurfacePr
     snapshot.currentExpected === " "
       ? "Space"
       : (snapshot.currentExpected?.toUpperCase() ?? "");
+  const showKeyboard =
+    assistance === "full" ||
+    assistance === "minimal" ||
+    (assistance === "on-error" && snapshot.hasPendingError);
 
   return (
     <div
@@ -84,16 +95,20 @@ export function TypingSurface({ prompt, inputMode, onComplete }: TypingSurfacePr
         {snapshot.hasPendingError
           ? "Backspace, then the highlighted key"
           : snapshot.currentExpected
-            ? `${targetLabel} · ${fingerLabel(finger)}`
+            ? assistance === "full"
+              ? `${targetLabel} · ${fingerLabel(finger)}`
+              : targetLabel
             : "Done"}
       </p>
 
-      <VirtualKeyboard
-        targetGrapheme={snapshot.currentExpected}
-        currentFinger={snapshot.currentFinger}
-        hasPendingError={snapshot.hasPendingError}
-        pressedBaseKey={pressedBaseKey}
-      />
+      {showKeyboard ? (
+        <VirtualKeyboard
+          targetGrapheme={snapshot.currentExpected}
+          currentFinger={assistance === "full" ? snapshot.currentFinger : null}
+          hasPendingError={snapshot.hasPendingError}
+          pressedBaseKey={pressedBaseKey}
+        />
+      ) : null}
 
       {!focused ? (
         <p className="text-sm text-legend">Click this area, then type.</p>

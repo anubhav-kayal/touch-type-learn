@@ -98,6 +98,10 @@ importers:
         version: 3.2.7(@types/node@20.19.43)(jiti@2.7.0)(jsdom@30.0.1)(lightningcss@1.32.0)
 
   packages/curriculum:
+    dependencies:
+      '@keypath/typing-engine':
+        specifier: workspace:*
+        version: link:../typing-engine
     devDependencies:
       '@keypath/eslint-config':
         specifier: workspace:*
