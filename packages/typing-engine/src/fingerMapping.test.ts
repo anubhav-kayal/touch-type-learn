@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getFingerAssignment, getFingerForKey, getHomeRowFingers } from "./fingerMapping";
+import {
+  HOME_ROW_BUMP_KEYS,
+  US_QWERTY_ROWS,
+  getFingerAssignment,
+  getFingerForKey,
+  getHomeRowFingers,
+} from "./fingerMapping";
 
 describe("fingerMapping", () => {
   it("maps the home row to the correct fingers", () => {
@@ -21,6 +27,12 @@ describe("fingerMapping", () => {
 
   it("maps space to the thumb", () => {
     expect(getFingerForKey(" ")).toBe("thumb");
+  });
+
+  it("keeps F and J on the home-row bump keys", () => {
+    expect(HOME_ROW_BUMP_KEYS).toEqual(["f", "j"]);
+    expect(US_QWERTY_ROWS.home).toContain("f");
+    expect(US_QWERTY_ROWS.home).toContain("j");
   });
 
   it("uses the opposite-hand pinky for Shift", () => {

@@ -145,3 +145,24 @@ export function getHomeRowFingers(): Record<string, Finger> {
     ";": "right_pinky",
   };
 }
+
+export const US_QWERTY_ROWS = {
+  number: ["`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="],
+  top: ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]"],
+  home: ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"],
+  bottom: ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
+} as const;
+
+export const HOME_ROW_BUMP_KEYS = ["f", "j"] as const;
+
+export type ModifierKeyId = "shift-left" | "shift-right" | "space";
+
+export function getModifierFinger(id: ModifierKeyId): Finger {
+  if (id === "shift-left") {
+    return "left_pinky";
+  }
+  if (id === "shift-right") {
+    return "right_pinky";
+  }
+  return "thumb";
+}

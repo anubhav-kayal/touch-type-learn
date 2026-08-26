@@ -25,10 +25,14 @@ export { calculateWpm } from "./calculateWpm";
 export { createTypingSession, TypingSession } from "./engine";
 export {
   FINGERS,
+  HOME_ROW_BUMP_KEYS,
+  US_QWERTY_ROWS,
   getBaseKey,
   getFingerAssignment,
   getFingerForKey,
   getHomeRowFingers,
+  getModifierFinger,
 } from "./fingerMapping";
+export type { ModifierKeyId } from "./fingerMapping";
 export { firstGrapheme, segmentGraphemes } from "./graphemes";
 export { createManualClock, defaultNow } from "./timing";
