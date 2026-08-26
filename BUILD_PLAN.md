@@ -13,8 +13,8 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                        |
 | ------------ | ---------------------------- |
-| Active phase | Phase 1 — Core typing engine |
-| Last updated | 2026-08-26                   |
+| Active phase | Phase 2 — Basic typing experience |
+| Last updated | 2026-08-26                        |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–12                  |
 
@@ -138,7 +138,7 @@ Shipped 2026-08-26. Next.js 16 + React 19 + Tailwind v4 from `create-next-app`. 
 
 ## Phase 1 — Core typing engine
 
-**Status:** `not started`
+**Status:** `done`
 
 ### Objective
 
@@ -155,10 +155,10 @@ A React-free engine that can run a lesson prompt in tests and, later, in the UI.
 
 ### Technical tasks
 
-- [ ] Implement modules: `engine`, `timing`, `calculateWpm`, `calculateAccuracy`, `calculateConsistency`, `keyTracking`, `fingerMapping`, `mistakeTracking`, `types`
-- [ ] Public API: create session → `handleKey` / `handleBackspace` → snapshot
-- [ ] Export layout constants from one module only
-- [ ] No React, no DOM except `performance.now` injection for tests
+- [x] Implement modules: `engine`, `timing`, `calculateWpm`, `calculateAccuracy`, `calculateConsistency`, `keyTracking`, `fingerMapping`, `mistakeTracking`, `types`
+- [x] Public API: create session → `handleKey` / `handleBackspace` → snapshot
+- [x] Export layout constants from one module only
+- [x] No React, no DOM except `performance.now` injection for tests
 
 ### Database changes
 
@@ -183,6 +183,10 @@ Vitest cases: correct char, wrong char, backspace, double backspace, complete, e
 - `performance.now` in Node tests — inject a clock
 - Grapheme segmentation vs UTF-16 surrogate pairs
 - Defining “character” consistently for prompts and input
+
+### Phase notes
+
+Shipped 2026-08-26. `createTypingSession` + injected `createManualClock`. A character is an NFC grapheme (`Intl.Segmenter`). Forced correction requires backspace before the cursor can advance; extra keys while an error is pending count as additional errors. Net WPM uses currently correct slots; raw WPM uses all character keystrokes. Accuracy is a 0–1 ratio that still penalizes corrected mistakes. Consistency is 0–100 from the CV of IKIs (pauses >1500ms dropped; `null` below 8 intervals). `₹` is one grapheme and has no US QWERTY finger. 33 Vitest tests passing. Ready for Phase 2.
 
 ---
 

@@ -306,6 +306,21 @@ Package: `packages/typing-engine`.
 
 The engine is unit-tested extensively with Vitest. The UI may not duplicate any of these calculations.
 
+Live WPM, accuracy, and consistency are computed **inside the engine** from the session. `packages/scoring` consumes those numbers later for stars, XP, and mastery — it does not re-derive keystroke math.
+
+### Public API
+
+```ts
+createTypingSession({ expected, inputMode?, now? })
+session.handleKey(grapheme, at?)
+session.handleBackspace(at?)
+session.getSnapshot()
+```
+
+`now` defaults to `performance.now()` in the browser and is injected in tests via `createManualClock`. Each `handleKey` consumes the first grapheme of the input (NFC-normalized). The model is one expected slot per grapheme: extra characters after completion are ignored.
+
+`TypingSnapshot` includes cursor, per-character statuses, pending-error flag, combo, duration, WPM, raw WPM, accuracy (0–1), consistency (0–100 or `null`), per-key summaries, and the current finger assignment.
+
 ---
 
 ## Database Architecture
@@ -677,6 +692,12 @@ Planned after MVP (see BUILD_PLAN phases 8–12): expanded practice modes, Word 
 ## Architectural Decisions
 
 Record decisions here. Newest first.
+
+### ADR-015 — Engine owns live metrics; one grapheme per expected slot
+
+**Decision:** `packages/typing-engine` computes WPM, accuracy, and consistency. Tests inject `now()`. Input is NFC grapheme clusters, one expected slot each. Characters not on US QWERTY (e.g. `₹`) have a `null` finger assignment.
+
+**Why:** Live metrics must stay off the network and off React. Scoring later reads the snapshot; it must not re-parse keystrokes. Graphemes avoid splitting `₹` or combining marks.
 
 ### ADR-001 — Curriculum lives in code, metadata in Postgres
 
