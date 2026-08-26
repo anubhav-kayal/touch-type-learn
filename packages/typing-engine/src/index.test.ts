@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PACKAGE_NAME, createTypingSessionPlaceholder } from "./index";
+import { KEYBOARD_LAYOUT, PACKAGE_NAME } from "./index";
 
 describe("@keypath/typing-engine", () => {
-  it("exports the package name", () => {
+  it("exports the package name and layout", () => {
     expect(PACKAGE_NAME).toBe("@keypath/typing-engine");
-  });
-
-  it("returns an uninitialized session placeholder", () => {
-    expect(createTypingSessionPlaceholder()).toEqual({ status: "uninitialized" });
+    expect(KEYBOARD_LAYOUT).toBe("us-qwerty");
   });
 });
