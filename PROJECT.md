@@ -663,8 +663,11 @@ Env: `apps/web/.env.local` from `.env.example` (`NEXT_PUBLIC_SUPABASE_URL`, `NEX
 ### Staging / production
 
 - Vercel project on `apps/web`
-- Supabase project (staging + prod)
-- Migrations applied via Supabase CLI, never by hand in the dashboard as the source of truth
+- Hosted Supabase project (staging + prod) — **Phase 13**. Users never run Docker.
+- Auth site URL and `/auth/callback` redirects must match the public origin
+- Migrations applied via Supabase CLI (`db push`), never by hand in the dashboard as the source of truth
+
+Local Docker (`supabase start`) is optional developer convenience only.
 
 ---
 
@@ -685,7 +688,7 @@ Explicitly out of MVP:
 - Per-keystroke cloud replay
 - Streak freezes, gems, gacha, energy systems
 
-Planned after MVP (see BUILD_PLAN phases 8–12): expanded practice modes, Word Rain, daily challenges, achievements, placement test, polish, PostHog, production launch.
+Planned after MVP (see BUILD_PLAN phases 8–13): expanded practice modes, Word Rain, daily challenges, achievements, placement test, polish, PostHog, then hosted public accounts.
 
 ---
 
@@ -693,9 +696,15 @@ Planned after MVP (see BUILD_PLAN phases 8–12): expanded practice modes, Word 
 
 Record decisions here. Newest first.
 
+### ADR-018 — Guest v1 cache; merge without double XP; auth is optional
+
+**Decision:** Guest progress is `keypath.guest.v1` (stars, best WPM/accuracy, attempt counts, XP, key-stat summaries, streak dates). `keypath.progress.v1` is read once and upgraded. The Next.js app never uses the service role. Proxy refreshes the session but does not force login — `/learn` stays public. XP merge is `max(account.xp + XP from guest lessons the account had not completed, guest.xp)`.
+
+**Why:** Guests must keep working offline. Taking `max(account.xp, guest.xp)` and then adding new-lesson XP would double-count. Forcing login in proxy would block World 1.
+
 ### ADR-017 — Curriculum catalog in code; local 1★ unlocks until auth
 
-**Decision:** Worlds and lessons are TypeScript data in `packages/curriculum`. Unlock is linear across playable lessons at ≥1 star (90% accuracy via `calculateStars`). Stars persist in `keypath.progress.v1` until Supabase in Phase 4.
+**Decision:** Worlds and lessons are TypeScript data in `packages/curriculum`. Unlock is linear across playable lessons at ≥1 star (90% accuracy via `calculateStars`). Stars persist in `keypath.guest.v1` (Phase 4); `keypath.progress.v1` is migrated on read.
 
 **Why:** Prompts can be reviewed in git. Tests enforce `allowedKeys`. Auth is not required to walk World 1.
 

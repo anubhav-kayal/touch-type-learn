@@ -13,10 +13,10 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                       |
 | ------------ | --------------------------- |
-| Active phase | Phase 4 — Supabase and accounts |
+| Active phase | Phase 5 — Progression and gamification |
 | Last updated | 2026-08-26                  |
 | MVP =        | Phases 0–7                   |
-| Post-MVP =   | Phases 8–12                  |
+| Post-MVP =   | Phases 8–13                  |
 
 **Legend:** `not started` · `in progress` · `done`
 
@@ -37,7 +37,8 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 9  Word Rain (first game)
 10 Daily challenges + achievements
 11 Placement test
-12 Polish, a11y, E2E, analytics, production
+12 Polish, a11y, E2E, analytics
+13 Hosted Supabase + public accounts   ← live for everyone
 ```
 
 ### Dependencies
@@ -50,6 +51,7 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
                      ↘ 10
                 3+6 → 11   placement needs curriculum + mastery
 7+12 overlap is fine for polish of MVP surfaces
+12 → 13    polish before public Auth URL and prod keys
 ```
 
 Guest local persistence is sketched in Phase 2 (enough to retry a lesson) and completed in Phase 4 (schema + merge).
@@ -304,7 +306,7 @@ Shipped 2026-08-26. Catalog lives in `packages/curriculum` (`w1-orient` … `w5-
 
 ## Phase 4 — Supabase and accounts
 
-**Status:** `not started`
+**Status:** `done`
 
 ### Objective
 
@@ -321,13 +323,13 @@ Real persistence, auth, RLS, and guest migration. Curriculum metadata seeded.
 
 ### Technical tasks
 
-- [ ] Migrations for MVP tables
-- [ ] RLS policies as specified
-- [ ] Seed worlds/lessons IDs
-- [ ] `@supabase/ssr` server client + browser client
-- [ ] Server Actions for attempt submit (validate payload)
-- [ ] Guest provider + migrate action
-- [ ] `.env.example` documented
+- [x] Migrations for MVP tables
+- [x] RLS policies as specified
+- [x] Seed worlds/lessons IDs
+- [x] `@supabase/ssr` server client + browser client
+- [x] Server Actions for attempt submit (validate payload)
+- [x] Guest provider + migrate action
+- [x] `.env.example` documented
 
 ### Database changes
 
@@ -355,6 +357,10 @@ Phase 3 (stable lesson IDs). Phase 2 UI to attach save.
 - Merge bugs (double XP) — implement merge in one pure function with tests
 - Local Supabase not running in CI — keep unit tests independent of Docker
 - Clock skew on streak dates — use UTC dates
+
+### Notes
+
+Shipped 2026-08-26. Schema lives in `supabase/migrations/20260826100000_init.sql` (RLS comments beside each table). Seed IDs are generated from the curriculum catalog (`renderCurriculumSeedSql`); `apps/web/src/seed-sql.test.ts` fails if they drift. Guest progress is `keypath.guest.v1`; `keypath.progress.v1` is imported once. Guests keep learning with no Supabase. Signed-in finish writes one attempt row plus progress/key/daily/streak aggregates. Merge is `mergeGuestIntoAccount` in `@keypath/scoring`. Routes: `/login`, `/signup`, `/auth/callback`. Google only if `NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true`. This machine has no Docker/Supabase CLI, so the signed-in Postgres path needs `supabase start` or a hosted project plus `apps/web/.env.local`.
 
 ---
 
@@ -689,11 +695,11 @@ Ship. This phase hardens Phases 0–7 (and later 8–11 if already built).
 - PostHog (or chosen analytics) with the event list in `PROJECT.md`
 - RLS review
 - Playwright: guest lesson, signup merge, persist, map unlock
-- Production Vercel + Supabase
+- Staging env checklist (no public DNS required)
 
 ### Technical tasks
 
-Security review of actions (zod payloads). Monitoring. `README` for production env. Keyboard-only navigation of chrome.
+Security review of actions (zod payloads). Monitoring. Keyboard-only navigation of chrome. `README` local + staging env. Production URL and public Auth are **Phase 13**.
 
 ### Database changes
 
@@ -709,15 +715,70 @@ Playwright suite green against local or staging. Lighthouse/a11y spot check on d
 
 ### Completion criteria
 
-- Production URL
+- Staging URL or local E2E of the core loop
 - RLS verified
-- E2E of the core loop
 - Analytics events firing without typed text
+- Ready to point Auth at a public domain in Phase 13
 
 ### Known risks
 
 - Focus stolen from the lesson by toasts
 - Hydration mismatches from guest localStorage — gate on client mount
+
+---
+
+## Phase 13 — Public accounts (hosted)
+
+**Status:** `not started`
+
+### Objective
+
+Keypath is live for everyone. Sign-up and saved progress use a **hosted** Supabase project. End users install nothing. Docker Desktop is local-only and is not part of production.
+
+### Features
+
+- Hosted Supabase (Auth + Postgres) for all public accounts
+- Next.js on Vercel (`apps/web`)
+- Email/password signup on the public URL
+- Google OAuth if the hosted provider is configured
+- Guest still works; first sign-in merges `keypath.guest.v1` into the account
+- Auth site URL and redirect allow-list set to the real domain
+
+### Technical tasks
+
+- [ ] Create staging + production Supabase projects
+- [ ] `supabase link` + `supabase db push` (migrations + seed; never hand-edit prod as source of truth)
+- [ ] Vercel project for `apps/web`
+- [ ] Production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`; `SUPABASE_SERVICE_ROLE_KEY` server-only
+- [ ] Dashboard: Auth site URL = production origin; additional redirects include `/auth/callback`
+- [ ] Optional: Google provider + `NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true` on Vercel
+- [ ] Confirm a new user can sign up from the public URL and an attempt row appears in hosted Postgres
+- [ ] Confirm guests can finish World 1 without an account
+
+### Database changes
+
+Apply existing MVP schema to hosted projects. No new tables unless Phase 12 review added policies.
+
+### Dependencies
+
+Phase 12 (hardening). Phase 4 schema and merge must already exist.
+
+### Tests
+
+Playwright signup + persist against staging. Manual: create account on production, complete one lesson, verify `lesson_attempts` for that user only (RLS).
+
+### Completion criteria
+
+- Public URL
+- Anyone can create an account without Docker or the CLI
+- Guest merge works on first sign-in from a real browser
+- Service role is not in client bundles
+
+### Known risks
+
+- Wrong Auth site URL → OAuth/email redirects fail
+- Pointing Vercel at local `127.0.0.1` keys → production sign-in broken
+- Forgetting `db push` → FK errors on lesson ids
 
 ---
 
