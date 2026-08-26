@@ -11,10 +11,10 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 ## Current status
 
-| Field        | Value                         |
-| ------------ | ----------------------------- |
-| Active phase | Phase 3 — Curriculum system   |
-| Last updated | 2026-08-26                    |
+| Field        | Value                       |
+| ------------ | --------------------------- |
+| Active phase | Phase 4 — Supabase and accounts |
+| Last updated | 2026-08-26                  |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–12                  |
 
@@ -248,7 +248,7 @@ Shipped 2026-08-26. Route: `/learn/home-row` (fixture `asdf jkl;`). Engine lives
 
 ## Phase 3 — Curriculum system
 
-**Status:** `not started`
+**Status:** `done`
 
 ### Objective
 
@@ -267,11 +267,11 @@ Data-driven worlds and lessons with the allowed-key invariant and a readable cou
 
 ### Technical tasks
 
-- [ ] `packages/curriculum` lesson types, world lists, `assertAllowedKeys`
-- [ ] Generator helpers for patterns that **check** allowed keys
-- [ ] Course map UI
-- [ ] Wire lesson player to curriculum IDs, not fixtures
-- [ ] Assistance level per lesson
+- [x] `packages/curriculum` lesson types, world lists, `assertAllowedKeys`
+- [x] Generator helpers for patterns that **check** allowed keys
+- [x] Course map UI
+- [x] Wire lesson player to curriculum IDs, not fixtures
+- [x] Assistance level per lesson
 
 ### Database changes
 
@@ -295,6 +295,10 @@ Every authored prompt: all chars ⊆ `allowedKeys` ∪ `{ space }` (and later ex
 
 - Authoring quality (boring drills vs useful ones) — budget time for copy
 - Course map visual complexity — ship a clear vertical/path map, not a minigame
+
+### Phase notes
+
+Shipped 2026-08-26. Catalog lives in `packages/curriculum` (`w1-orient` … `w5-sentences`). Worlds 6–8 are stubs. `assertAllowedKeys` runs at catalog load for every typing prompt. `calculateStars` in `@keypath/scoring` gates unlocks at 90%. Best stars are stored in `localStorage` (`keypath.progress.v1`) until Phase 4. Assistance: World 1 full, late World 2–3 minimal, Worlds 4–5 on-error. Route `/learn` is the map; `/learn/[lessonId]` plays a lesson. `/learn/home-row` redirects to `w1-home-fj`.
 
 ---
 

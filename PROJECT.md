@@ -693,6 +693,12 @@ Planned after MVP (see BUILD_PLAN phases 8–12): expanded practice modes, Word 
 
 Record decisions here. Newest first.
 
+### ADR-017 — Curriculum catalog in code; local 1★ unlocks until auth
+
+**Decision:** Worlds and lessons are TypeScript data in `packages/curriculum`. Unlock is linear across playable lessons at ≥1 star (90% accuracy via `calculateStars`). Stars persist in `keypath.progress.v1` until Supabase in Phase 4.
+
+**Why:** Prompts can be reviewed in git. Tests enforce `allowedKeys`. Auth is not required to walk World 1.
+
 ### ADR-016 — Isolated typing surface; Zustand for phase only
 
 **Decision:** The engine instance and live snapshot live in `TypingSurface`. Zustand stores `view`, `result`, and `runId` (retry remount). The virtual keyboard is in `@keypath/ui` and is `aria-hidden`; finger guidance is visible text.
