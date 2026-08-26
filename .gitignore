@@ -1,0 +1,43 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build
+dist
+.next
+out
+.turbo
+*.tsbuildinfo
+
+# env
+.env
+.env*.local
+!.env.example
+
+# logs / debug
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# os / editor
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# test / coverage
+coverage
+playwright-report
+test-results
+blob-report
+
+# supabase
+supabase/.temp
+supabase/.branches
+
+# vercel
+.vercel

@@ -1,0 +1,21 @@
+{
+  "name": "@keypath/typing-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@keypath/eslint-config": "workspace:*",
+    "@keypath/typescript-config": "workspace:*",
+    "eslint": "^9.34.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
