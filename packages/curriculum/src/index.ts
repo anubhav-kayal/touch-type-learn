@@ -29,3 +29,9 @@ export {
   listPlayableLessons,
 } from "./progress";
 export { getLesson, getWorld, getWorlds, LESSON_ALIASES, WORLDS } from "./catalog";
+export {
+  getLessonSeedRows,
+  getWorldSeedRows,
+  renderCurriculumSeedSql,
+} from "./seed";
+export type { LessonSeedRow, WorldSeedRow } from "./seed";
