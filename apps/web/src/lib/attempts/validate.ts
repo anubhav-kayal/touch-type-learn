@@ -125,7 +125,18 @@ export function validateAttemptPayload(input: unknown): AttemptValidation {
 }
 
 export type PracticeValidation =
-  | { ok: true; durationMs: number; keyStats: Record<string, GuestKeyStat> }
+  | {
+      ok: true;
+      durationMs: number;
+      wpm: number;
+      rawWpm: number;
+      accuracy: number;
+      consistency: number | null;
+      errors: number;
+      correctedErrors: number;
+      maxCombo: number;
+      keyStats: Record<string, GuestKeyStat>;
+    }
   | { ok: false; error: string };
 
 export function validatePracticePayload(input: unknown): PracticeValidation {
@@ -134,8 +145,38 @@ export function validatePracticePayload(input: unknown): PracticeValidation {
   }
   const durationMs = nonNegativeInt(input.durationMs);
   const keyStats = parseKeyStats(input.keyStats);
-  if (durationMs === null || durationMs > MAX_DURATION_MS || keyStats === null) {
+  const wpm = finiteNumber(input.wpm) ?? 0;
+  const rawWpm = finiteNumber(input.rawWpm) ?? wpm;
+  const accuracy = finiteNumber(input.accuracy) ?? 0;
+  const consistency =
+    input.consistency === null || input.consistency === undefined
+      ? null
+      : finiteNumber(input.consistency);
+  const errors = nonNegativeInt(input.errors) ?? 0;
+  const correctedErrors = nonNegativeInt(input.correctedErrors) ?? 0;
+  const maxCombo = nonNegativeInt(input.maxCombo) ?? 0;
+  if (
+    durationMs === null ||
+    durationMs > MAX_DURATION_MS ||
+    keyStats === null ||
+    wpm < 0 ||
+    rawWpm < 0 ||
+    accuracy < 0 ||
+    accuracy > 1 ||
+    (consistency !== null && (consistency < 0 || consistency > 100))
+  ) {
     return { ok: false, error: "Practice numbers are out of range." };
   }
-  return { ok: true, durationMs, keyStats };
+  return {
+    ok: true,
+    durationMs,
+    wpm,
+    rawWpm,
+    accuracy,
+    consistency,
+    errors,
+    correctedErrors,
+    maxCombo,
+    keyStats,
+  };
 }
