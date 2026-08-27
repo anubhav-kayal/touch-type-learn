@@ -97,7 +97,7 @@ The learner can move rapidly between lessons. Three stars are never required to 
 
 ### Practice
 
-Adaptive and targeted modes. MVP includes weak-key practice. Later: accuracy, speed, punctuation, numbers, common words, custom text, endurance.
+Adaptive and targeted modes. Catalog in `packages/curriculum` (`listPracticeModes`): weak keys, accuracy, speed, common words, punctuation, numbers, and custom text. `/practice` is the hub; `/practice/[mode]` uses the same `TypingSurface` as Learn. Weak-key and word modes stay inside `practiceAllowedKeys`. Punctuation and numbers use the mode’s own key set. Custom pastes are normalized to US QWERTY and rejected above 400 characters (2,000 raw). Practice writes `lesson_attempts` with `source = 'practice'`, `stars = 0`, and no XP; it does not extend the streak.
 
 ### Play
 
@@ -697,6 +697,12 @@ Planned after MVP (see BUILD_PLAN phases 8–13): expanded practice modes, Word 
 ## Architectural Decisions
 
 Record decisions here. Newest first.
+
+### ADR-019 — Practice modes reuse the lesson player; attempts tagged `source`
+
+**Decision:** The practice catalog lives in `packages/curriculum`. Each mode is a lesson-shaped session on `TypingSurface`. `lesson_attempts.lesson_id` is nullable; `source` is `lesson` or `practice`. Custom text is stripped to US QWERTY and length-capped. Practice still awards no XP and does not touch the streak.
+
+**Why:** A second scorer would drift from Learn. Practice drills are not catalog lessons, so they cannot keep a required `lesson_id` FK.
 
 ### ADR-018 — Guest v1 cache; merge without double XP; auth is optional
 

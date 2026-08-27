@@ -13,7 +13,7 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                       |
 | ------------ | --------------------------- |
-| Active phase | Phase 8 — Practice modes (post-MVP) |
+| Active phase | Phase 9 — Word Rain (post-MVP) |
 | Last updated | 2026-08-27                  |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–13                  |
@@ -531,7 +531,7 @@ Shipped 2026-08-27. Home is a continue-first dashboard after the first star; an 
 
 ## Phase 8 — Practice modes
 
-**Status:** `not started` (post-MVP)
+**Status:** `done` (post-MVP)
 
 ### Objective
 
@@ -546,11 +546,11 @@ Practice as a real destination, not only weak keys.
 
 ### Technical tasks
 
-Mode catalog in curriculum/practice package; each mode is a lesson-shaped session using the same player.
+- [x] Mode catalog in curriculum/practice package; each mode is a lesson-shaped session using the same player.
 
 ### Database changes
 
-Optional `practice_attempts` or reuse `lesson_attempts` with a `source` enum. Prefer a `source` column added via migration.
+- [x] Reuse `lesson_attempts` with a `source` column (`lesson` | `practice`); `lesson_id` nullable for practice.
 
 ### Dependencies
 
@@ -567,6 +567,10 @@ At least four modes besides Learn, all using the engine.
 ### Known risks
 
 Custom text can include unteachable unicode — strip or warn.
+
+### Phase notes
+
+Shipped 2026-08-27. `/practice` is a hub; `/practice/[mode]` runs the existing typing surface. Seven modes: weak keys, accuracy (forced correction), speed (free-flow), common words (unlocked letters only), punctuation, numbers, custom text. Custom pastes are normalized then rejected if empty, non-QWERTY-only, or over 400 graphemes / 2,000 raw characters. Signed-in practice rows go into `lesson_attempts` with `source = 'practice'`, 0 XP, 0 stars. Endurance is still later.
 
 ---
 
