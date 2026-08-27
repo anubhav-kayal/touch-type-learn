@@ -101,7 +101,7 @@ Adaptive and targeted modes. Catalog in `packages/curriculum` (`listPracticeMode
 
 ### Play
 
-Games reuse `packages/typing-engine`. They must not reimplement WPM, accuracy, or key tracking. First game (post-MVP core): Word Rain. Other modes (race, meteor, combo) are later.
+Games reuse `packages/typing-engine`. They must not reimplement WPM, accuracy, or key tracking. First game: Word Rain at `/play`. Words fall toward the home-row line; type to catch them before they hit the desk. Per-word commits use `TypingSession` (forced correction). Round WPM/accuracy come from `calculateWpm` / `calculateAccuracy`. Results write key stats, XP (`calculateWordRainXp`, capped), and a `lesson_attempts` row with `source = 'word-rain'`. Beginner pools stay inside `practiceAllowedKeys`. Other modes (race, meteor, combo) are later.
 
 ### Stats
 
@@ -697,6 +697,12 @@ Planned after MVP (see BUILD_PLAN phases 8–13): expanded practice modes, Word 
 ## Architectural Decisions
 
 Record decisions here. Newest first.
+
+### ADR-020 — Word Rain uses per-word TypingSession; RAF paints without React
+
+**Decision:** Each falling word is committed through `createTypingSession` (forced correction). Game WPM and accuracy use the engine helpers, not a second formula. Positions update in `requestAnimationFrame` via DOM transforms; React re-renders on spawn, catch, miss, and game over only. Attempts use `source = 'word-rain'` with nullable `lesson_id`.
+
+**Why:** RAF setState every frame would jank. A second scorer would drift from Learn. Word Rain is not a catalog lesson, so it cannot keep a required `lesson_id`.
 
 ### ADR-019 — Practice modes reuse the lesson player; attempts tagged `source`
 

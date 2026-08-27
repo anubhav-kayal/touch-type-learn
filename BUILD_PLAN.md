@@ -13,7 +13,7 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                       |
 | ------------ | --------------------------- |
-| Active phase | Phase 9 — Word Rain (post-MVP) |
+| Active phase | Phase 10 — Daily challenges (post-MVP) |
 | Last updated | 2026-08-27                  |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–13                  |
@@ -576,7 +576,7 @@ Shipped 2026-08-27. `/practice` is a hub; `/practice/[mode]` runs the existing t
 
 ## Phase 9 — First game (Word Rain)
 
-**Status:** `not started` (post-MVP)
+**Status:** `done` (post-MVP)
 
 ### Objective
 
@@ -590,11 +590,11 @@ One polished game. No second game in this phase.
 
 ### Technical tasks
 
-Game loop in `apps/web`; shared engine for commit of a word; no duplicate WPM math.
+- [x] Game loop in `apps/web`; shared engine for commit of a word; no duplicate WPM math.
 
 ### Database changes
 
-Attempts with `source = 'word-rain'` if enum exists.
+- [x] Attempts with `source = 'word-rain'`
 
 ### Dependencies
 
@@ -611,6 +611,10 @@ Game is fun for 3–5 minutes and does not jank; metrics match engine definition
 ### Known risks
 
 RAF + React; keep rendering in canvas or a dedicated view. Difficulty curve.
+
+### Phase notes
+
+Shipped 2026-08-27. `/play` is Word Rain only. Words fall toward a gold home-row line; type to lock and catch (forced correction). Three lives. Speed ramps with catches. Beginners get F/J tokens; home-row learners get real words from `pickRainWords`. RAF moves glyphs via transform; React updates the word list on events. XP is `calculateWordRainXp` (capped at 120). Guests and signed-in users save key stats plus `source = 'word-rain'`. No second game.
 
 ---
 
