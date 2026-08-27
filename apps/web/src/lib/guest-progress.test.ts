@@ -97,10 +97,23 @@ describe("guest snapshot", () => {
     });
 
     const snapshot = readGuestSnapshot();
-    expect(snapshot.xp).toBe(65);
+    expect(snapshot.xp).toBe(90);
     expect(snapshot.progress["w1-orient"]?.xpEarned).toBe(65);
+    expect(snapshot.achievements["first-lesson"]).toBeTruthy();
     expect(snapshot.streak.currentStreak).toBe(1);
     expect(snapshot.streak.lastPracticeDate).toBe("2026-08-27");
+  });
+
+  it("unlocks Home Row Hero when the World 1 boss is passed", () => {
+    recordGuestAttempt({
+      lessonId: "w1-home-boss",
+      stars: 1,
+      wpm: 24,
+      accuracy: 0.94,
+      xpAwarded: 150,
+      now: new Date("2026-08-27T12:00:00.000Z"),
+    });
+    expect(readGuestSnapshot().achievements["home-row-hero"]).toBeTruthy();
   });
 
   it("updates key stats from practice without XP or streak", () => {

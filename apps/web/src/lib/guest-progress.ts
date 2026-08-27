@@ -3,10 +3,13 @@ import {
   addDailyActivity,
   appendAttemptPoint,
   applyKeyStatDelta,
+  applyMetaProgress,
   applyStreakOnPass,
   emptyProgressSnapshot,
   levelFromXp,
+  maxTimedWpm,
   mergeStreak,
+  type ApplyMetaResult,
 } from "@keypath/scoring";
 import { parseGuestSnapshot, starsFromSnapshot, EMPTY_STARS } from "@/lib/guest-snapshot";
 
@@ -128,7 +131,8 @@ export function getServerProgressHud(): ProgressHud {
 export function guestHasUnmigratedWork(snapshot: GuestSnapshot): boolean {
   return (
     Object.values(snapshot.progress).some((row) => row.attemptCount > 0) ||
-    Object.keys(snapshot.keyStats).length > 0
+    Object.keys(snapshot.keyStats).length > 0 ||
+    Object.keys(snapshot.achievements).length > 0
   );
 }
 
@@ -151,7 +155,7 @@ export function recordGuestAttempt(input: {
   durationMs?: number;
   consistency?: number | null;
   now?: Date;
-}): GuestSnapshot {
+}): ApplyMetaResult & { snapshot: GuestSnapshot } {
   const current = readGuestSnapshot();
   const previous = current.progress[input.lessonId];
   const xpAwarded = Math.max(0, input.xpAwarded ?? 0);
@@ -177,6 +181,7 @@ export function recordGuestAttempt(input: {
   const durationMs = Math.max(0, input.durationMs ?? 0);
   const now = input.now ?? new Date();
   const hasSession = durationMs > 0 || characters > 0;
+  const priorTimedBestWpm = maxTimedWpm(current.recentAttempts ?? []);
 
   const next: GuestSnapshot = {
     ...current,
@@ -207,8 +212,20 @@ export function recordGuestAttempt(input: {
         })
       : (current.daily ?? {}),
   };
-  writeGuestSnapshot(next);
-  return next;
+  const recorded = applyMetaProgress(next, {
+    lessonId: input.lessonId,
+    stars: input.stars,
+    accuracy: input.accuracy,
+    wpm: input.wpm,
+    durationMs,
+    characters,
+    source: "lesson",
+    priorTimedBestWpm,
+    now,
+  });
+  const snapshot: GuestSnapshot = { version: 1, ...recorded.snapshot };
+  writeGuestSnapshot(snapshot);
+  return { ...recorded, snapshot };
 }
 
 export function recordPracticeAttempt(input: {
@@ -217,8 +234,9 @@ export function recordPracticeAttempt(input: {
   durationMs: number;
   consistency?: number | null;
   keyStats: Record<string, GuestKeyStat>;
+  practiceMode?: string;
   now?: Date;
-}): GuestSnapshot {
+}): ApplyMetaResult & { snapshot: GuestSnapshot } {
   const current = readGuestSnapshot();
   const keyStats = { ...current.keyStats };
   for (const row of Object.values(input.keyStats)) {
@@ -226,6 +244,7 @@ export function recordPracticeAttempt(input: {
   }
   const characters = Object.values(input.keyStats).reduce((sum, row) => sum + row.attempts, 0);
   const now = input.now ?? new Date();
+  const priorTimedBestWpm = maxTimedWpm(current.recentAttempts ?? []);
   const next: GuestSnapshot = {
     ...current,
     keyStats,
@@ -247,8 +266,20 @@ export function recordPracticeAttempt(input: {
       xpEarned: 0,
     }),
   };
-  writeGuestSnapshot(next);
-  return next;
+  const recorded = applyMetaProgress(next, {
+    stars: 0,
+    accuracy: input.accuracy,
+    wpm: input.wpm,
+    durationMs: input.durationMs,
+    characters,
+    source: "practice",
+    practiceMode: input.practiceMode,
+    priorTimedBestWpm,
+    now,
+  });
+  const snapshot: GuestSnapshot = { version: 1, ...recorded.snapshot };
+  writeGuestSnapshot(snapshot);
+  return { ...recorded, snapshot };
 }
 
 export function recordWordRainAttempt(input: {
@@ -261,7 +292,7 @@ export function recordWordRainAttempt(input: {
   missed: number;
   xpAwarded?: number;
   now?: Date;
-}): GuestSnapshot {
+}): ApplyMetaResult & { snapshot: GuestSnapshot } {
   const current = readGuestSnapshot();
   const keyStats = { ...current.keyStats };
   for (const row of Object.values(input.keyStats)) {
@@ -271,6 +302,7 @@ export function recordWordRainAttempt(input: {
   const now = input.now ?? new Date();
   const xpAwarded = Math.max(0, input.xpAwarded ?? 0);
   const passed = input.caught >= 1;
+  const priorTimedBestWpm = maxTimedWpm(current.recentAttempts ?? []);
   const next: GuestSnapshot = {
     ...current,
     keyStats,
@@ -294,8 +326,19 @@ export function recordWordRainAttempt(input: {
       xpEarned: xpAwarded,
     }),
   };
-  writeGuestSnapshot(next);
-  return next;
+  const recorded = applyMetaProgress(next, {
+    stars: 0,
+    accuracy: input.accuracy,
+    wpm: input.wpm,
+    durationMs: input.durationMs,
+    characters,
+    source: "word-rain",
+    priorTimedBestWpm,
+    now,
+  });
+  const snapshot: GuestSnapshot = { version: 1, ...recorded.snapshot };
+  writeGuestSnapshot(snapshot);
+  return { ...recorded, snapshot };
 }
 
 export function recordPracticeKeyStats(
@@ -353,6 +396,8 @@ export function overlayAccountProgress(input: {
   keyStats?: Record<string, GuestKeyStat>;
   recentAttempts?: GuestSnapshot["recentAttempts"];
   daily?: GuestSnapshot["daily"];
+  achievements?: GuestSnapshot["achievements"];
+  dailyChallenge?: GuestSnapshot["dailyChallenge"];
 }): void {
   overlayStars(input.stars);
   const current = readGuestSnapshot();
@@ -363,6 +408,8 @@ export function overlayAccountProgress(input: {
     keyStats: input.keyStats ?? current.keyStats,
     recentAttempts: input.recentAttempts ?? current.recentAttempts,
     daily: input.daily ?? current.daily,
+    achievements: input.achievements ?? current.achievements,
+    dailyChallenge: input.dailyChallenge ?? current.dailyChallenge,
   });
 }
 

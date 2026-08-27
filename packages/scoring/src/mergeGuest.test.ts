@@ -57,6 +57,8 @@ describe("mergeGuestIntoAccount", () => {
       streak: incoming.streak,
       recentAttempts: incoming.recentAttempts,
       daily: incoming.daily,
+      achievements: incoming.achievements,
+      dailyChallenge: incoming.dailyChallenge,
     });
     expect(merged.progress["w1-orient"]).not.toBe(incoming.progress["w1-orient"]);
   });

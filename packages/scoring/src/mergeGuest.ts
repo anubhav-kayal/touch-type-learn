@@ -1,13 +1,17 @@
 import type {
   AttemptPoint,
   DailyBucket,
+  DailyChallengeState,
   GuestKeyStat,
   GuestLessonProgress,
   GuestSnapshot,
   GuestStreak,
   ProgressSnapshot,
 } from "@keypath/shared-types";
-import { RECENT_ATTEMPTS_MAX } from "./thresholds";
+import { getAchievement } from "./achievements";
+import { emptyDailyChallenge } from "./dailyChallenge";
+import { RECENT_ATTEMPTS_MAX, XP } from "./thresholds";
+import { utcDateString } from "./utcDate";
 
 export function emptyProgressSnapshot(): ProgressSnapshot {
   return {
@@ -17,6 +21,8 @@ export function emptyProgressSnapshot(): ProgressSnapshot {
     streak: emptyStreak(),
     recentAttempts: [],
     daily: {},
+    achievements: {},
+    dailyChallenge: emptyDailyChallenge(),
   };
 }
 
@@ -175,6 +181,66 @@ function cloneDaily(daily: Record<string, DailyBucket> | undefined): Record<stri
   );
 }
 
+function cloneAchievements(
+  achievements: Record<string, string> | undefined,
+): Record<string, string> {
+  return { ...(achievements ?? {}) };
+}
+
+function cloneDailyChallenge(state: DailyChallengeState | undefined): DailyChallengeState {
+  return { ...(state ?? emptyDailyChallenge()) };
+}
+
+export function mergeAchievements(
+  account: Record<string, string>,
+  guest: Record<string, string>,
+): Record<string, string> {
+  const merged: Record<string, string> = { ...account };
+  for (const [id, unlockedAt] of Object.entries(guest)) {
+    const existing = merged[id];
+    if (!existing || unlockedAt < existing) {
+      merged[id] = unlockedAt;
+    }
+  }
+  return merged;
+}
+
+export function mergeDailyChallenge(
+  account: DailyChallengeState,
+  guest: DailyChallengeState,
+  now: Date = new Date(),
+): DailyChallengeState {
+  const today = utcDateString(now);
+  const left = account.date === today ? account : emptyDailyChallenge(today);
+  const right = guest.date === today ? guest : emptyDailyChallenge(today);
+  return {
+    date: today,
+    challengeId: left.challengeId,
+    progress: Math.max(left.progress, right.progress),
+    target: left.target,
+    completed: left.completed || right.completed,
+    xpAwarded: left.xpAwarded || right.xpAwarded,
+  };
+}
+
+function extraMetaXp(account: ProgressSnapshot, guest: ProgressSnapshot): number {
+  let extra = 0;
+  for (const id of Object.keys(guest.achievements ?? {})) {
+    if (!account.achievements[id]) {
+      extra += getAchievement(id)?.xp ?? 0;
+    }
+  }
+  const guestDaily = guest.dailyChallenge;
+  const accountDaily = account.dailyChallenge;
+  if (
+    guestDaily?.xpAwarded &&
+    !(accountDaily?.xpAwarded && accountDaily.date === guestDaily.date)
+  ) {
+    extra += XP.dailyChallenge;
+  }
+  return extra;
+}
+
 function lessonCompleted(row: GuestLessonProgress | undefined): boolean {
   return (row?.stars ?? 0) >= 1;
 }
@@ -204,6 +270,8 @@ export function mergeGuestIntoAccount(
       streak: { ...guest.streak },
       recentAttempts: cloneAttempts(guest.recentAttempts),
       daily: cloneDaily(guest.daily),
+      achievements: cloneAchievements(guest.achievements),
+      dailyChallenge: cloneDailyChallenge(guest.dailyChallenge),
     };
   }
 
@@ -234,7 +302,7 @@ export function mergeGuestIntoAccount(
 
   return {
     progress,
-    xp: Math.max(account.xp + newLessonXp, guest.xp),
+    xp: Math.max(account.xp + newLessonXp + extraMetaXp(account, guest), guest.xp),
     keyStats,
     streak: mergeStreak(account.streak, guest.streak),
     recentAttempts: mergeRecentAttempts(
@@ -242,5 +310,13 @@ export function mergeGuestIntoAccount(
       guest.recentAttempts ?? [],
     ),
     daily: mergeDaily(account.daily ?? {}, guest.daily ?? {}),
+    achievements: mergeAchievements(
+      account.achievements ?? {},
+      guest.achievements ?? {},
+    ),
+    dailyChallenge: mergeDailyChallenge(
+      account.dailyChallenge ?? emptyDailyChallenge(),
+      guest.dailyChallenge ?? emptyDailyChallenge(),
+    ),
   };
 }

@@ -1,12 +1,20 @@
 import type {
   AttemptPoint,
   DailyBucket,
+  DailyChallengeState,
   GuestKeyStat,
   GuestLessonProgress,
   GuestSnapshot,
   GuestStreak,
 } from "@keypath/shared-types";
-import { emptyProgressSnapshot } from "@keypath/scoring";
+import {
+  challengeForUtcDate,
+  emptyDailyChallenge,
+  emptyProgressSnapshot,
+  getDailyChallenge,
+  isAchievementId,
+  isDailyChallengeId,
+} from "@keypath/scoring";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -124,6 +132,42 @@ function parseStreak(value: unknown): GuestStreak {
   };
 }
 
+function parseAchievements(value: unknown): Record<string, string> {
+  if (!isRecord(value)) {
+    return {};
+  }
+  const achievements: Record<string, string> = {};
+  for (const [id, unlockedAt] of Object.entries(value)) {
+    if (isAchievementId(id) && typeof unlockedAt === "string" && unlockedAt.length > 0) {
+      achievements[id] = unlockedAt;
+    }
+  }
+  return achievements;
+}
+
+function parseDailyChallenge(value: unknown): DailyChallengeState {
+  const fallback = emptyDailyChallenge();
+  if (!isRecord(value)) {
+    return fallback;
+  }
+  const date =
+    typeof value.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.date)
+      ? value.date
+      : fallback.date;
+  const rawId = typeof value.challengeId === "string" ? value.challengeId : "";
+  const challengeId = isDailyChallengeId(rawId) ? rawId : challengeForUtcDate(date).id;
+  const def = getDailyChallenge(challengeId);
+  const progress = Math.max(0, asFiniteNumber(value.progress));
+  return {
+    date,
+    challengeId: def.id,
+    progress: Math.min(def.target, progress),
+    target: def.target,
+    completed: value.completed === true,
+    xpAwarded: value.xpAwarded === true,
+  };
+}
+
 export function parseGuestSnapshot(raw: unknown): GuestSnapshot {
   const empty: GuestSnapshot = { version: 1, ...emptyProgressSnapshot() };
   if (!isRecord(raw) || raw.version !== 1) {
@@ -175,6 +219,8 @@ export function parseGuestSnapshot(raw: unknown): GuestSnapshot {
     streak: parseStreak(raw.streak),
     recentAttempts: parseRecentAttempts(raw.recentAttempts),
     daily: parseDaily(raw.daily),
+    achievements: parseAchievements(raw.achievements),
+    dailyChallenge: parseDailyChallenge(raw.dailyChallenge),
   };
 }
 
