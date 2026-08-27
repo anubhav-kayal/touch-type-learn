@@ -2,6 +2,9 @@
 
 import {
   completedLessonCount,
+  dailyChallengeForNow,
+  formatDailyProgress,
+  getDailyChallenge,
   lastAttempt,
   levelFromXp,
   pickWeakKeys,
@@ -77,6 +80,8 @@ export function HomeView() {
     allowed,
   ).focus;
   const practicedToday = snapshot.streak.lastPracticeDate === utcDateString();
+  const daily = dailyChallengeForNow(snapshot.dailyChallenge);
+  const dailyDef = getDailyChallenge(daily.challengeId);
   const streakLabel =
     snapshot.streak.currentStreak >= 2
       ? `${snapshot.streak.currentStreak} days in a row`
@@ -126,6 +131,25 @@ export function HomeView() {
             }
           />
         </dl>
+
+        <section className="flex flex-col gap-3" data-testid="daily-challenge">
+          <p className="font-mono text-xs tracking-[0.2em] text-legend uppercase">
+            Daily · UTC
+          </p>
+          <h2 className="font-display text-xl">{dailyDef.title}</h2>
+          <p className="text-sm text-legend">{dailyDef.description}</p>
+          <p className="font-mono text-sm text-ink">{formatDailyProgress(daily)}</p>
+          {daily.completed ? (
+            <p className="font-mono text-xs text-legend">Done · +100 XP</p>
+          ) : (
+            <Link
+              href={dailyDef.href}
+              className="w-fit rounded-full bg-ink px-6 py-3 font-display text-desk focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bump"
+            >
+              {daily.challengeId === "weak-keys-3" ? "Practice weak keys" : "Continue learning"}
+            </Link>
+          )}
+        </section>
 
         <section className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between">

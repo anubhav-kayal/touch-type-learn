@@ -50,5 +50,6 @@ describe("StatsView", () => {
     expect(screen.getByText("95%")).toBeInTheDocument();
     expect(screen.getByTestId("stats-trend")).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "F" })).toBeInTheDocument();
+    expect(screen.getByTestId("achievements")).toHaveTextContent("First star");
   });
 });

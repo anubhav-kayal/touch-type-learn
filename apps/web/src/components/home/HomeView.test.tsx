@@ -54,5 +54,7 @@ describe("HomeView", () => {
     render(<HomeView />);
     expect(screen.getByRole("heading", { name: /next: f and j/i })).toBeInTheDocument();
     expect(continueHrefs().every((href) => href === "/learn/w1-home-fj")).toBe(true);
+    expect(screen.getByTestId("daily-challenge")).toBeInTheDocument();
+    expect(screen.getByText(/utc/i)).toBeInTheDocument();
   });
 });

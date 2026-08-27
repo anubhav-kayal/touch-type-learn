@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ACHIEVEMENTS,
   activitySeries,
   completedLessonCount,
   keyTable,
@@ -100,6 +101,8 @@ export function StatsView() {
           <LedgerStat label="Lessons" value={String(lessons)} />
         </dl>
 
+        <AchievementsList unlocked={snapshot.achievements} />
+
         <section className="flex flex-col gap-3">
           <h2 className="font-display text-xl">Last 14 days</h2>
           <ol className="grid grid-cols-7 gap-2 sm:grid-cols-[repeat(14,minmax(0,1fr))]" data-testid="stats-activity">
@@ -158,5 +161,28 @@ function LedgerStat({ label, value }: { label: string; value: string }) {
       <dt className="text-[0.65rem] tracking-[0.18em] text-legend uppercase">{label}</dt>
       <dd className="mt-1 text-2xl text-ink">{value}</dd>
     </div>
+  );
+}
+
+function AchievementsList({ unlocked }: { unlocked: Record<string, string> }) {
+  const rows = ACHIEVEMENTS.filter((row) => unlocked[row.id]);
+  if (rows.length === 0) {
+    return null;
+  }
+  return (
+    <section className="flex flex-col gap-3" data-testid="achievements">
+      <h2 className="font-display text-xl">Achievements</h2>
+      <ul className="flex flex-col gap-2">
+        {rows.map((row) => (
+          <li key={row.id} className="flex items-baseline justify-between gap-4 rounded-2xl bg-keycap px-4 py-3">
+            <span>
+              <span className="block text-ink">{row.title}</span>
+              <span className="text-sm text-legend">{row.description}</span>
+            </span>
+            <span className="font-mono text-xs text-legend">+{row.xp}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
