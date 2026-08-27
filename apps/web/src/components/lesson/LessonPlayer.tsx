@@ -7,7 +7,7 @@ import {
   getWorlds,
 } from "@keypath/curriculum";
 import type { Lesson } from "@keypath/curriculum";
-import { calculateStars } from "@keypath/scoring";
+import { calculateStars, calculateXp, EMPTY_XP_BREAKDOWN, levelFromXp } from "@keypath/scoring";
 import type { GuestKeyStat } from "@keypath/shared-types";
 import { calculateAccuracy } from "@keypath/typing-engine";
 import type { KeyStatSummary, TypingSnapshot } from "@keypath/typing-engine";
@@ -15,7 +15,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { submitLessonAttempt } from "@/app/actions/progress";
 import { AuthBar } from "@/components/auth/AuthBar";
-import { recordGuestAttempt } from "@/lib/guest-progress";
+import { recordGuestAttempt, readGuestSnapshot } from "@/lib/guest-progress";
 import { IntroCard } from "./IntroCard";
 import { ResultsCard } from "./ResultsCard";
 import type { LessonResultView } from "./ResultsCard";
@@ -48,11 +48,30 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       targetWpm: lesson.targetWpm,
     });
     const keyStats = mergeKeyStats(all);
-    recordGuestAttempt({
+    const previous = readGuestSnapshot().progress[lesson.id];
+    const awarded =
+      stars >= 1
+        ? calculateXp({
+            stars,
+            accuracy,
+            wpm: last?.wpm ?? 0,
+            isBoss: Boolean(lesson.isBoss),
+            previous: previous
+              ? {
+                  stars: previous.stars,
+                  bestWpm: previous.bestWpm,
+                  bestAccuracy: previous.bestAccuracy,
+                  attemptCount: previous.attemptCount,
+                }
+              : undefined,
+          })
+        : EMPTY_XP_BREAKDOWN;
+    const snapshot = recordGuestAttempt({
       lessonId: lesson.id,
       stars,
       wpm: last?.wpm ?? 0,
       accuracy,
+      xpAwarded: awarded.total,
       keyStats,
     });
     void submitLessonAttempt({
@@ -74,6 +93,11 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       errors,
       maxCombo: all.reduce((max, item) => Math.max(max, item.maxCombo), 0),
       stars,
+      isBoss: Boolean(lesson.isBoss),
+      xp: awarded,
+      totalXp: snapshot.xp,
+      level: levelFromXp(snapshot.xp),
+      streakDays: snapshot.streak.currentStreak,
     });
     setView("results");
   }
