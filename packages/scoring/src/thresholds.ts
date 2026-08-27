@@ -13,6 +13,7 @@ export const XP = {
   accuracyPerfect: 50,
   personalRecord: 30,
   bossFirst: 100,
+  dailyChallenge: 100,
 } as const;
 
 export const LEVEL_XP_BASE = 80;

@@ -27,6 +27,8 @@ export {
   mergeStreak,
   mergeDaily,
   mergeRecentAttempts,
+  mergeAchievements,
+  mergeDailyChallenge,
 } from "./mergeGuest";
 export {
   activitySeries,
@@ -38,3 +40,27 @@ export {
   summarizeAttempts,
   todayBucket,
 } from "./summarizeStats";
+export {
+  ACHIEVEMENTS,
+  HOME_ROW_HERO_LESSON_ID,
+  MARATHON_MINUTES,
+  evaluateAchievements,
+  getAchievement,
+  isAchievementId,
+} from "./achievements";
+export type { AchievementDef, AchievementEvent, EvaluateAchievementsInput } from "./achievements";
+export {
+  DAILY_CHALLENGES,
+  TIMED_PB_MS,
+  applyDailyChallenge,
+  challengeForUtcDate,
+  dailyChallengeForNow,
+  emptyDailyChallenge,
+  formatDailyProgress,
+  getDailyChallenge,
+  isDailyChallengeId,
+  maxTimedWpm,
+} from "./dailyChallenge";
+export type { DailyChallengeDef, DailyChallengeEvent } from "./dailyChallenge";
+export { applyMetaProgress } from "./applyMetaProgress";
+export type { ApplyMetaResult, MetaEvent } from "./applyMetaProgress";
