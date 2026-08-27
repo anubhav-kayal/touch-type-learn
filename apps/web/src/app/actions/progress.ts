@@ -2,11 +2,16 @@
 
 import { getLesson } from "@keypath/curriculum";
 import {
+  applyStreakOnPass,
+  calculateXp,
   emptyProgressSnapshot,
+  levelFromXp,
   mergeGuestIntoAccount,
+  utcDateString,
 } from "@keypath/scoring";
 import type {
   GuestKeyStat,
+  GuestStreak,
   ProgressSnapshot,
 } from "@keypath/shared-types";
 import { validateAttemptPayload } from "@/lib/attempts/validate";
@@ -17,14 +22,22 @@ import type { Json } from "@/lib/supabase/database.types";
 
 type ActionClient = Awaited<ReturnType<typeof createClient>>;
 
-function utcDateString(now = new Date()): string {
-  return now.toISOString().slice(0, 10);
-}
+type ProgressResult = {
+  ok: boolean;
+  stars: Record<string, number>;
+  xp: number;
+  level: number;
+  streak: GuestStreak;
+};
 
-function previousUtcDate(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00.000Z`);
-  date.setUTCDate(date.getUTCDate() - 1);
-  return date.toISOString().slice(0, 10);
+function emptyProgressResult(ok = false): ProgressResult {
+  return {
+    ok,
+    stars: {},
+    xp: 0,
+    level: 1,
+    streak: emptyProgressSnapshot().streak,
+  };
 }
 
 async function requireUser() {
@@ -89,7 +102,10 @@ async function writeProgressSnapshot(
   userId: string,
   snapshot: ProgressSnapshot,
 ) {
-  await supabase.from("profiles").update({ xp: snapshot.xp }).eq("id", userId);
+  await supabase.from("profiles").update({
+    xp: snapshot.xp,
+    level: levelFromXp(snapshot.xp),
+  }).eq("id", userId);
 
   const progressRows = Object.entries(snapshot.progress).map(([lessonId, row]) => ({
     user_id: userId,
@@ -156,6 +172,8 @@ async function upsertAttemptAggregates(
     stars: number;
     xpEarned: number;
     keyStats: Record<string, GuestKeyStat>;
+    passed: boolean;
+    nextStreak: GuestStreak;
   },
 ) {
   const now = new Date().toISOString();
@@ -174,7 +192,7 @@ async function upsertAttemptAggregates(
       best_wpm: Math.max(Number(existing?.best_wpm ?? 0), input.wpm),
       best_accuracy: Math.max(Number(existing?.best_accuracy ?? 0), input.accuracy),
       attempt_count: (existing?.attempt_count ?? 0) + 1,
-      xp_earned: Math.max(existing?.xp_earned ?? 0, input.xpEarned),
+      xp_earned: (existing?.xp_earned ?? 0) + input.xpEarned,
       first_completed_at:
         existing?.first_completed_at ??
         (input.stars >= 1 ? now : null),
@@ -226,41 +244,20 @@ async function upsertAttemptAggregates(
       date: today,
       practice_minutes: Number(daily?.practice_minutes ?? 0) + input.durationMs / 60_000,
       characters: (daily?.characters ?? 0) + characters,
-      lessons_completed: (daily?.lessons_completed ?? 0) + (input.stars >= 1 ? 1 : 0),
+      lessons_completed: (daily?.lessons_completed ?? 0) + (input.passed ? 1 : 0),
       xp_earned: (daily?.xp_earned ?? 0) + input.xpEarned,
     },
     { onConflict: "user_id,date" },
   );
 
-  const { data: streak } = await supabase
-    .from("streaks")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-  const last = streak?.last_practice_date ?? null;
-  let currentStreak = streak?.current_streak ?? 0;
-  if (last === today) {
-    currentStreak = streak?.current_streak ?? 1;
-  } else if (last === previousUtcDate(today)) {
-    currentStreak = (streak?.current_streak ?? 0) + 1;
-  } else {
-    currentStreak = 1;
+  if (input.passed) {
+    await supabase.from("streaks").update({
+      current_streak: input.nextStreak.currentStreak,
+      longest_streak: input.nextStreak.longestStreak,
+      last_practice_date: input.nextStreak.lastPracticeDate,
+      practice_days_month: input.nextStreak.practiceDaysMonth,
+    }).eq("user_id", userId);
   }
-  const lastMonth = last?.slice(0, 7);
-  const thisMonth = today.slice(0, 7);
-  const practiceDaysMonth =
-    last === today
-      ? (streak?.practice_days_month ?? 1)
-      : lastMonth === thisMonth
-        ? (streak?.practice_days_month ?? 0) + 1
-        : 1;
-
-  await supabase.from("streaks").update({
-    current_streak: currentStreak,
-    longest_streak: Math.max(streak?.longest_streak ?? 0, currentStreak),
-    last_practice_date: today,
-    practice_days_month: practiceDaysMonth,
-  }).eq("user_id", userId);
 }
 
 export async function submitLessonAttempt(input: unknown): Promise<{
@@ -283,6 +280,47 @@ export async function submitLessonAttempt(input: unknown): Promise<{
   }
 
   const { payload, stars } = validated;
+  const lesson = getLesson(payload.lessonId);
+  if (!lesson) {
+    return { persisted: false, reason: "invalid", error: "Unknown lesson." };
+  }
+
+  const [{ data: existing }, { data: profile }, { data: streakRow }] = await Promise.all([
+    auth.supabase
+      .from("user_progress")
+      .select("*")
+      .eq("user_id", auth.user.id)
+      .eq("lesson_id", payload.lessonId)
+      .maybeSingle(),
+    auth.supabase.from("profiles").select("xp").eq("id", auth.user.id).maybeSingle(),
+    auth.supabase.from("streaks").select("*").eq("user_id", auth.user.id).maybeSingle(),
+  ]);
+
+  const awarded = calculateXp({
+    stars,
+    accuracy: payload.accuracy,
+    wpm: payload.wpm,
+    isBoss: Boolean(lesson.isBoss),
+    previous: existing
+      ? {
+          stars: existing.stars,
+          bestWpm: Number(existing.best_wpm),
+          bestAccuracy: Number(existing.best_accuracy),
+          attemptCount: existing.attempt_count,
+        }
+      : undefined,
+  });
+
+  const currentStreak: GuestStreak = {
+    currentStreak: streakRow?.current_streak ?? 0,
+    longestStreak: streakRow?.longest_streak ?? 0,
+    lastPracticeDate: streakRow?.last_practice_date ?? null,
+    practiceDaysMonth: streakRow?.practice_days_month ?? 0,
+  };
+  const passed = stars >= 1;
+  const nextStreak = passed ? applyStreakOnPass(currentStreak) : currentStreak;
+  const nextXp = (profile?.xp ?? 0) + awarded.total;
+
   const { error } = await auth.supabase.from("lesson_attempts").insert({
     user_id: auth.user.id,
     lesson_id: payload.lessonId,
@@ -294,7 +332,7 @@ export async function submitLessonAttempt(input: unknown): Promise<{
     errors: payload.errors,
     corrected_errors: payload.correctedErrors,
     max_combo: payload.maxCombo,
-    xp_earned: 0,
+    xp_earned: awarded.total,
     stars,
     key_stats: payload.keyStats as unknown as Json,
   });
@@ -308,21 +346,36 @@ export async function submitLessonAttempt(input: unknown): Promise<{
     wpm: payload.wpm,
     accuracy: payload.accuracy,
     stars,
-    xpEarned: 0,
+    xpEarned: awarded.total,
     keyStats: payload.keyStats,
+    passed,
+    nextStreak,
   });
+
+  await auth.supabase
+    .from("profiles")
+    .update({ xp: nextXp, level: levelFromXp(nextXp) })
+    .eq("id", auth.user.id);
 
   return { persisted: true, stars };
 }
 
-export async function migrateGuestProgress(rawGuest: unknown): Promise<{
-  ok: boolean;
-  error?: string;
-  stars?: Record<string, number>;
-}> {
+function toProgressResult(snapshot: ProgressSnapshot): ProgressResult {
+  return {
+    ok: true,
+    stars: starsFromProgress(snapshot),
+    xp: snapshot.xp,
+    level: levelFromXp(snapshot.xp),
+    streak: snapshot.streak,
+  };
+}
+
+export async function migrateGuestProgress(rawGuest: unknown): Promise<
+  ProgressResult & { error?: string }
+> {
   const auth = await requireUser();
   if (auth.error || !auth.user || !auth.supabase) {
-    return { ok: false, error: auth.error ?? "unauthenticated" };
+    return { ...emptyProgressResult(), error: auth.error ?? "unauthenticated" };
   }
 
   const guest = parseGuestSnapshot(rawGuest);
@@ -355,17 +408,22 @@ export async function migrateGuestProgress(rawGuest: unknown): Promise<{
     });
   }
 
-  return { ok: true, stars: starsFromProgress(merged) };
+  return toProgressResult(merged);
+}
+
+export async function getMyProgress(): Promise<ProgressResult> {
+  const auth = await requireUser();
+  if (auth.error || !auth.user || !auth.supabase) {
+    return emptyProgressResult();
+  }
+  const account = await loadAccountSnapshot(auth.supabase, auth.user.id);
+  return toProgressResult(account);
 }
 
 export async function getMyProgressStars(): Promise<{
   ok: boolean;
   stars: Record<string, number>;
 }> {
-  const auth = await requireUser();
-  if (auth.error || !auth.user || !auth.supabase) {
-    return { ok: false, stars: {} };
-  }
-  const account = await loadAccountSnapshot(auth.supabase, auth.user.id);
-  return { ok: true, stars: starsFromProgress(account) };
+  const result = await getMyProgress();
+  return { ok: result.ok, stars: result.stars };
 }

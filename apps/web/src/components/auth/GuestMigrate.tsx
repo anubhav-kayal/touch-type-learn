@@ -1,10 +1,10 @@
 "use client";
 
-import { getMyProgressStars, migrateGuestProgress } from "@/app/actions/progress";
+import { getMyProgress, migrateGuestProgress } from "@/app/actions/progress";
 import {
   clearGuestSnapshot,
-  guestSnapshotIsEmpty,
-  overlayStars,
+  guestHasUnmigratedWork,
+  overlayAccountProgress,
   readGuestSnapshot,
 } from "@/lib/guest-progress";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -23,22 +23,20 @@ export function GuestMigrate() {
 
     async function syncForUser() {
       const guest = readGuestSnapshot();
-      if (!guestSnapshotIsEmpty(guest)) {
+      if (guestHasUnmigratedWork(guest)) {
         const migrated = await migrateGuestProgress(guest);
         if (cancelled) {
           return;
         }
         if (migrated.ok) {
           clearGuestSnapshot();
-          if (migrated.stars) {
-            overlayStars(migrated.stars);
-          }
+          overlayAccountProgress(migrated);
           return;
         }
       }
-      const remote = await getMyProgressStars();
+      const remote = await getMyProgress();
       if (!cancelled && remote.ok) {
-        overlayStars(remote.stars);
+        overlayAccountProgress(remote);
       }
     }
 

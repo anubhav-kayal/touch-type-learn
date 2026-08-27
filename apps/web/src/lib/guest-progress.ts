@@ -1,5 +1,10 @@
-import type { GuestKeyStat, GuestLessonProgress, GuestSnapshot } from "@keypath/shared-types";
-import { emptyProgressSnapshot } from "@keypath/scoring";
+import type { GuestKeyStat, GuestLessonProgress, GuestSnapshot, GuestStreak } from "@keypath/shared-types";
+import {
+  applyStreakOnPass,
+  emptyProgressSnapshot,
+  levelFromXp,
+  mergeStreak,
+} from "@keypath/scoring";
 import { parseGuestSnapshot, starsFromSnapshot, EMPTY_STARS } from "@/lib/guest-snapshot";
 
 export const GUEST_STORAGE_KEY = "keypath.guest.v1";
@@ -76,6 +81,54 @@ export function getServerStarsSnapshot(): Record<string, number> {
   return EMPTY_STARS;
 }
 
+export interface ProgressHud {
+  xp: number;
+  level: number;
+  currentStreak: number;
+  lastPracticeDate: string | null;
+}
+
+export const EMPTY_HUD: ProgressHud = {
+  xp: 0,
+  level: 1,
+  currentStreak: 0,
+  lastPracticeDate: null,
+};
+
+let cachedHud: ProgressHud = EMPTY_HUD;
+let cachedHudKey = "";
+
+export function readProgressHud(): ProgressHud {
+  const snapshot = readGuestSnapshot();
+  const next: ProgressHud = {
+    xp: snapshot.xp,
+    level: levelFromXp(snapshot.xp),
+    currentStreak: snapshot.streak.currentStreak,
+    lastPracticeDate: snapshot.streak.lastPracticeDate,
+  };
+  const key = `${next.xp}:${next.level}:${next.currentStreak}:${next.lastPracticeDate ?? ""}`;
+  if (key === cachedHudKey) {
+    return cachedHud;
+  }
+  cachedHudKey = key;
+  cachedHud =
+    next.xp === 0 && next.currentStreak === 0 && next.lastPracticeDate === null
+      ? EMPTY_HUD
+      : next;
+  return cachedHud;
+}
+
+export function getServerProgressHud(): ProgressHud {
+  return EMPTY_HUD;
+}
+
+export function guestHasUnmigratedWork(snapshot: GuestSnapshot): boolean {
+  return (
+    Object.values(snapshot.progress).some((row) => row.attemptCount > 0) ||
+    Object.keys(snapshot.keyStats).length > 0
+  );
+}
+
 export function recordStars(lessonId: string, stars: number): void {
   recordGuestAttempt({
     lessonId,
@@ -90,17 +143,19 @@ export function recordGuestAttempt(input: {
   stars: number;
   wpm: number;
   accuracy: number;
-  xpEarned?: number;
+  xpAwarded?: number;
   keyStats?: Record<string, GuestKeyStat>;
+  now?: Date;
 }): GuestSnapshot {
   const current = readGuestSnapshot();
   const previous = current.progress[input.lessonId];
+  const xpAwarded = Math.max(0, input.xpAwarded ?? 0);
   const nextRow: GuestLessonProgress = {
     stars: Math.max(previous?.stars ?? 0, input.stars),
     bestWpm: Math.max(previous?.bestWpm ?? 0, input.wpm),
     bestAccuracy: Math.max(previous?.bestAccuracy ?? 0, input.accuracy),
     attemptCount: (previous?.attemptCount ?? 0) + 1,
-    xpEarned: Math.max(previous?.xpEarned ?? 0, input.xpEarned ?? 0),
+    xpEarned: (previous?.xpEarned ?? 0) + xpAwarded,
   };
 
   const keyStats = { ...current.keyStats };
@@ -135,6 +190,9 @@ export function recordGuestAttempt(input: {
     ...current,
     progress: { ...current.progress, [input.lessonId]: nextRow },
     keyStats,
+    xp: current.xp + xpAwarded,
+    streak:
+      input.stars >= 1 ? applyStreakOnPass(current.streak, input.now) : current.streak,
   };
   writeGuestSnapshot(next);
   return next;
@@ -154,6 +212,20 @@ export function overlayStars(stars: Record<string, number>): void {
     };
   }
   writeGuestSnapshot({ ...current, progress });
+}
+
+export function overlayAccountProgress(input: {
+  stars: Record<string, number>;
+  xp: number;
+  streak: GuestStreak;
+}): void {
+  overlayStars(input.stars);
+  const current = readGuestSnapshot();
+  writeGuestSnapshot({
+    ...current,
+    xp: Math.max(current.xp, input.xp),
+    streak: mergeStreak(current.streak, input.streak),
+  });
 }
 
 export function subscribeProgress(onStoreChange: () => void): () => void {

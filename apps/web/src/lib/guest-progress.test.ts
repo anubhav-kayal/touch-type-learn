@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   LEGACY_PROGRESS_KEY,
   getServerStarsSnapshot,
+  guestHasUnmigratedWork,
   parseGuestSnapshot,
   readGuestSnapshot,
   readStars,
+  recordGuestAttempt,
   recordStars,
   starsFromSnapshot,
 } from "@/lib/guest-progress";
@@ -60,5 +62,43 @@ describe("guest snapshot", () => {
     expect(readStars()).toBe(readStars());
     recordStars("w1-orient", 1);
     expect(readStars()).toBe(readStars());
+  });
+
+  it("adds XP and a UTC streak only when the lesson is passed", () => {
+    const now = new Date("2026-08-27T12:00:00.000Z");
+    recordGuestAttempt({
+      lessonId: "w1-orient",
+      stars: 0,
+      wpm: 10,
+      accuracy: 0.8,
+      xpAwarded: 0,
+      now,
+    });
+    expect(readGuestSnapshot().xp).toBe(0);
+    expect(readGuestSnapshot().streak.currentStreak).toBe(0);
+    expect(guestHasUnmigratedWork(readGuestSnapshot())).toBe(true);
+
+    recordGuestAttempt({
+      lessonId: "w1-orient",
+      stars: 1,
+      wpm: 14,
+      accuracy: 0.92,
+      xpAwarded: 50,
+      now,
+    });
+    recordGuestAttempt({
+      lessonId: "w1-orient",
+      stars: 2,
+      wpm: 16,
+      accuracy: 0.96,
+      xpAwarded: 15,
+      now,
+    });
+
+    const snapshot = readGuestSnapshot();
+    expect(snapshot.xp).toBe(65);
+    expect(snapshot.progress["w1-orient"]?.xpEarned).toBe(65);
+    expect(snapshot.streak.currentStreak).toBe(1);
+    expect(snapshot.streak.lastPracticeDate).toBe("2026-08-27");
   });
 });

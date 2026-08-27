@@ -1,7 +1,9 @@
 export {
   clearGuestSnapshot,
+  getServerProgressHud,
   getServerStarsSnapshot,
   readGuestSnapshot,
+  readProgressHud,
   readStars,
   recordGuestAttempt,
   recordStars,
