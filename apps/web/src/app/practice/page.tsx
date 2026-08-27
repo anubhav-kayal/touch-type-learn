@@ -1,4 +1,4 @@
-import { PracticePlayer } from "@/components/practice/PracticePlayer";
+import { PracticeHub } from "@/components/practice/PracticeHub";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function PracticePage() {
-  return <PracticePlayer />;
+  return <PracticeHub />;
 }
