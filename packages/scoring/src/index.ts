@@ -6,10 +6,12 @@ export {
   XP,
   MIN_KEY_ATTEMPTS,
   MASTERY,
+  WORD_RAIN_XP,
 } from "./thresholds";
 export { calculateStars } from "./calculateStars";
 export { calculateXp, EMPTY_XP_BREAKDOWN } from "./calculateXp";
 export type { CalculateXpInput, XpBreakdown } from "./calculateXp";
+export { calculateWordRainXp } from "./calculateWordRainXp";
 export { levelFromXp, xpProgressInLevel, xpRequiredToReach } from "./calculateLevel";
 export { applyStreakOnPass } from "./applyStreak";
 export { previousUtcDate, utcDateString } from "./utcDate";

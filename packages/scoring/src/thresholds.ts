@@ -42,3 +42,11 @@ export const WEAK_KEY_TAKE_MAX = 5;
 export const PRACTICE_EXPLORE_WEIGHT = 0.15;
 
 export const RECENT_ATTEMPTS_MAX = 40;
+
+export const WORD_RAIN_XP = {
+  perCatch: 4,
+  accuracyHigh: 20,
+  accuracyPerfect: 40,
+  noMissBonus: 25,
+  cap: 120,
+} as const;
