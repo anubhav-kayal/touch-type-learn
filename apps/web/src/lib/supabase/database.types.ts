@@ -268,6 +268,86 @@ export interface Database {
           keyboard_labels?: boolean;
         }
       >;
+      achievements: Table<
+        {
+          id: string;
+          title: string;
+          description: string;
+          xp: number;
+        },
+        {
+          id: string;
+          title: string;
+          description: string;
+          xp?: number;
+        },
+        {
+          title?: string;
+          description?: string;
+          xp?: number;
+        }
+      >;
+      user_achievements: Table<
+        {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at: string;
+        },
+        {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at?: string;
+        },
+        {
+          unlocked_at?: string;
+        }
+      >;
+      daily_challenges: Table<
+        {
+          date: string;
+          challenge_id: string;
+          title: string;
+          description: string;
+        },
+        {
+          date: string;
+          challenge_id: string;
+          title: string;
+          description: string;
+        },
+        {
+          challenge_id?: string;
+          title?: string;
+          description?: string;
+        }
+      >;
+      user_daily_challenges: Table<
+        {
+          user_id: string;
+          date: string;
+          challenge_id: string;
+          progress: number;
+          target: number;
+          completed: boolean;
+          xp_awarded: boolean;
+        },
+        {
+          user_id: string;
+          date: string;
+          challenge_id: string;
+          progress?: number;
+          target: number;
+          completed?: boolean;
+          xp_awarded?: boolean;
+        },
+        {
+          challenge_id?: string;
+          progress?: number;
+          target?: number;
+          completed?: boolean;
+          xp_awarded?: boolean;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

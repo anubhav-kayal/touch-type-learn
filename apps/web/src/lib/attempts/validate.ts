@@ -136,6 +136,7 @@ export type PracticeValidation =
       correctedErrors: number;
       maxCombo: number;
       keyStats: Record<string, GuestKeyStat>;
+      practiceMode?: "weak-keys";
     }
   | { ok: false; error: string };
 
@@ -178,6 +179,7 @@ export function validatePracticePayload(input: unknown): PracticeValidation {
     correctedErrors,
     maxCombo,
     keyStats,
+    practiceMode: input.mode === "weak-keys" ? "weak-keys" : undefined,
   };
 }
 
