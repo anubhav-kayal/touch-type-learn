@@ -42,6 +42,30 @@ describe("ResultsCard", () => {
     expect(screen.getByTestId("xp-ledger")).toHaveTextContent("+200");
   });
 
+  it("shows newly unlocked achievements once", () => {
+    render(
+      <ResultsCard
+        result={{
+          ...passed,
+          unlocked: [
+            {
+              id: "home-row-hero",
+              title: "Home Row Hero",
+              description: "Pass the World 1 boss.",
+              xp: 100,
+            },
+          ],
+        }}
+        passed
+        nextLessonHref="/learn/w2-e-i"
+        onRetry={() => undefined}
+      />,
+    );
+
+    expect(screen.getByTestId("meta-unlocks")).toHaveTextContent("Home Row Hero");
+    expect(screen.getByTestId("meta-unlocks")).toHaveTextContent("+100");
+  });
+
   it("hides XP when the lesson is not passed", () => {
     render(
       <ResultsCard

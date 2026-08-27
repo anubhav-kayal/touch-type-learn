@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { XP, type XpBreakdown } from "@keypath/scoring";
+import { XP, type AchievementDef, type XpBreakdown } from "@keypath/scoring";
 import Link from "next/link";
+import { MetaUnlocks } from "@/components/progress/MetaUnlocks";
 
 export interface LessonResultView {
   accuracy: number;
@@ -16,6 +17,8 @@ export interface LessonResultView {
   totalXp: number;
   level: number;
   streakDays: number;
+  unlocked?: AchievementDef[];
+  dailyJustCompleted?: boolean;
 }
 
 interface ResultsCardProps {
@@ -144,6 +147,11 @@ export function ResultsCard({
           </ul>
         </div>
       ) : null}
+
+      <MetaUnlocks
+        unlocked={result.unlocked ?? []}
+        dailyJustCompleted={Boolean(result.dailyJustCompleted)}
+      />
 
       <div className="flex flex-col gap-3">
         {passed && nextLessonHref ? (
