@@ -700,7 +700,7 @@ Record decisions here. Newest first.
 
 ### ADR-018 — Guest v1 cache; merge without double XP; auth is optional
 
-**Decision:** Guest progress is `keypath.guest.v1` (stars, best WPM/accuracy, attempt counts, XP, key-stat summaries, streak dates). `keypath.progress.v1` is read once and upgraded. The Next.js app never uses the service role. Proxy refreshes the session but does not force login — `/learn` stays public. XP merge is `max(account.xp + XP from guest lessons the account had not completed, guest.xp)`.
+**Decision:** Guest progress is `keypath.guest.v1` (stars, best WPM/accuracy, attempt counts, XP, key-stat summaries, streak dates, recent attempts, daily buckets). `keypath.progress.v1` is read once and upgraded. The Next.js app never uses the service role. Proxy refreshes the session but does not force login — `/learn` stays public. XP merge is `max(account.xp + XP from guest lessons the account had not completed, guest.xp)`.
 
 **Why:** Guests must keep working offline. Taking `max(account.xp, guest.xp)` and then adding new-lesson XP would double-count. Forcing login in proxy would block World 1.
 

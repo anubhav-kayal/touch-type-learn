@@ -13,7 +13,7 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                       |
 | ------------ | --------------------------- |
-| Active phase | Phase 7 — Dashboard and statistics |
+| Active phase | Phase 8 — Practice modes (post-MVP) |
 | Last updated | 2026-08-27                  |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–13                  |
@@ -470,7 +470,7 @@ Shipped 2026-08-27. Mastery lives in `calculateMastery` with the PROJECT.md cons
 
 ## Phase 7 — Dashboard and statistics
 
-**Status:** `not started`
+**Status:** `done`
 
 ### Objective
 
@@ -484,10 +484,10 @@ A home that pushes “Continue” and a Stats page with the first honest charts.
 
 ### Technical tasks
 
-- [ ] Queries / views for aggregates (or compute from attempts in app for MVP)
-- [ ] Recharts on Stats only
-- [ ] Mobile-capable dashboard layout
-- [ ] Empty states that send the user into Learn
+- [x] Queries / views for aggregates (or compute from attempts in app for MVP)
+- [x] Recharts on Stats only
+- [x] Mobile-capable dashboard layout
+- [x] Empty states that send the user into Learn
 
 ### Database changes
 
@@ -512,16 +512,20 @@ Empty account dashboard. After one attempt, continue CTA points at the next lock
 - Over-fetching attempts — aggregate server-side or maintain `daily_stats`
 - Heatmap scope creep — table is enough to close MVP
 
+### Phase notes
+
+Shipped 2026-08-27. Home is a continue-first dashboard after the first star; an empty account still sees the F/J hero. `/stats` is the only Recharts surface: WPM + accuracy over the last 40 attempts, a 14-day activity row from `daily_stats`, and a per-key table. No new tables. Guests keep `recentAttempts` and `daily` in `keypath.guest.v1`. Heatmap deferred.
+
 ### MVP exit checklist
 
-- [ ] Engine tested
-- [ ] Worlds 1–3 playable
-- [ ] Keyboard + assistance
-- [ ] Map + 1★ gates
-- [ ] Guest + auth + merge
-- [ ] Stars, XP, streaks
-- [ ] Weak keys + adaptive practice
-- [ ] Dashboard + basic stats
+- [x] Engine tested
+- [x] Worlds 1–3 playable
+- [x] Keyboard + assistance
+- [x] Map + 1★ gates
+- [x] Guest + auth + merge
+- [x] Stars, XP, streaks
+- [x] Weak keys + adaptive practice
+- [x] Dashboard + basic stats
 
 ---
 
