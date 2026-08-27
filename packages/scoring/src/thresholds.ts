@@ -40,3 +40,5 @@ export const MASTERY = {
 export const WEAK_KEY_TAKE_MIN = 3;
 export const WEAK_KEY_TAKE_MAX = 5;
 export const PRACTICE_EXPLORE_WEIGHT = 0.15;
+
+export const RECENT_ATTEMPTS_MAX = 40;

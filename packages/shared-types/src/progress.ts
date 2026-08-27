@@ -26,6 +26,27 @@ export interface ProgressSnapshot {
   xp: number;
   keyStats: Record<string, GuestKeyStat>;
   streak: GuestStreak;
+  recentAttempts: AttemptPoint[];
+  daily: Record<string, DailyBucket>;
+}
+
+export interface AttemptPoint {
+  at: string;
+  lessonId: string | null;
+  wpm: number;
+  accuracy: number;
+  consistency: number | null;
+  durationMs: number;
+  characters: number;
+  source: "lesson" | "practice";
+}
+
+export interface DailyBucket {
+  date: string;
+  practiceMinutes: number;
+  characters: number;
+  lessonsCompleted: number;
+  xpEarned: number;
 }
 
 export interface GuestSnapshot extends ProgressSnapshot {

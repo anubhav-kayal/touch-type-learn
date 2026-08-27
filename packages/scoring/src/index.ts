@@ -23,4 +23,16 @@ export {
   emptyStreak,
   mergeGuestIntoAccount,
   mergeStreak,
+  mergeDaily,
+  mergeRecentAttempts,
 } from "./mergeGuest";
+export {
+  activitySeries,
+  addDailyActivity,
+  appendAttemptPoint,
+  completedLessonCount,
+  keyTable,
+  lastAttempt,
+  summarizeAttempts,
+  todayBucket,
+} from "./summarizeStats";
