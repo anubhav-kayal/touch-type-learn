@@ -13,8 +13,8 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                       |
 | ------------ | --------------------------- |
-| Active phase | Phase 5 — Progression and gamification |
-| Last updated | 2026-08-26                  |
+| Active phase | Phase 6 — Adaptive practice |
+| Last updated | 2026-08-27                  |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–13                  |
 
@@ -366,7 +366,7 @@ Shipped 2026-08-26. Schema lives in `supabase/migrations/20260826100000_init.sql
 
 ## Phase 5 — Progression and gamification
 
-**Status:** `not started`
+**Status:** `done`
 
 ### Objective
 
@@ -383,10 +383,10 @@ Stars, XP, level, streaks, boss framing, unlocks — all using `packages/scoring
 
 ### Technical tasks
 
-- [ ] `packages/scoring`: stars, XP, level, streak date logic
-- [ ] Results screen shows stars + XP breakdown
-- [ ] Persist XP/level/streak (user) and mirror in guest storage
-- [ ] Unlock = 1★ on previous lesson (linear per world)
+- [x] `packages/scoring`: stars, XP, level, streak date logic
+- [x] Results screen shows stars + XP breakdown
+- [x] Persist XP/level/streak (user) and mirror in guest storage
+- [x] Unlock = 1★ on previous lesson (linear per world)
 
 ### Database changes
 
@@ -410,6 +410,10 @@ Scoring table tests: 89.9% → 0 stars; 90% → 1; 95% → 2; 98% + consistency 
 
 - Farming XP via 2-second drills — acceptable for MVP; cap later if needed
 - Consistency `null` on short drills — fallback documented in `PROJECT.md`
+
+### Phase notes
+
+Shipped 2026-08-27. Stars were already in `calculateStars`; this phase adds `calculateXp`, `levelFromXp` / `xpRequiredToReach(n) = floor(80 * n^1.35)`, and `applyStreakOnPass` (UTC, once per day, quiet reset). XP is recomputed on the server from the attempt + stored bests — the client does not send XP. Failed lessons (0★) award no XP and do not touch the streak. Guests get the same awards in `keypath.guest.v1`. Results shows a small XP ledger; `/learn` shows level, XP, and a calm streak line. Boss lessons in Worlds 1–3 were already in the catalog.
 
 ---
 

@@ -557,7 +557,9 @@ Below 90% accuracy: lesson is not passed, no star, next lesson stays locked. Ear
 | Boss completion (first time)                               | +100                         |
 | Daily challenge (later)                                    | +100                         |
 
-XP rewards accuracy, consistency of practice, and improvement — not raw speed alone. Speed PRs can award the PR bonus, but there is no “typed 80 WPM” XP in beginner worlds.
+XP rewards accuracy, consistency of practice, and improvement — not raw speed alone. Speed PRs can award the PR bonus, but there is no “typed 80 WPM” XP in beginner worlds. `packages/scoring` computes XP; the attempt payload does not include it. A personal-record bonus requires a prior attempt on that lesson. Failed lessons (0★) award no XP.
+
+Streaks use UTC dates. A passed lesson increments at most once per UTC day. A gap quietly resets `current_streak` to 1 — the UI never threatens a lost streak.
 
 ### User level
 
