@@ -49,6 +49,7 @@ export {
 } from "./practice/modes";
 export type { PracticeKeySource, PracticeMode, PracticeModeId } from "./practice/modes";
 export { COMMON_PRACTICE_WORDS } from "./practice/words";
+export { pickRainWords } from "./practice/rainWords";
 export { practiceAllowedKeys } from "./unlockedKeys";
 export {
   getCurrentLessonId,
