@@ -6,13 +6,14 @@ import {
   pickRainWords,
   practiceAllowedKeys,
 } from "@keypath/curriculum";
-import { calculateWordRainXp } from "@keypath/scoring";
+import { calculateWordRainXp, type AchievementDef } from "@keypath/scoring";
 import { fingerLabel } from "@keypath/ui";
 import type { Finger } from "@keypath/typing-engine";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { submitWordRainAttempt } from "@/app/actions/play";
 import { AppHeader } from "@/components/shell/AppHeader";
+import { MetaUnlocks } from "@/components/progress/MetaUnlocks";
 import { useLessonStars } from "@/hooks/use-lesson-stars";
 import { recordWordRainAttempt } from "@/lib/guest-progress";
 import {
@@ -30,6 +31,8 @@ interface RainResult {
   wpm: number;
   accuracy: number;
   xp: number;
+  unlocked: AchievementDef[];
+  dailyJustCompleted: boolean;
 }
 
 export function WordRainView() {
@@ -79,7 +82,7 @@ export function WordRainView() {
       missed: summary.missed,
       accuracy: summary.accuracy,
     });
-    recordWordRainAttempt({
+    const recorded = recordWordRainAttempt({
       wpm: summary.wpm,
       accuracy: summary.accuracy,
       durationMs: summary.durationMs,
@@ -108,6 +111,8 @@ export function WordRainView() {
       wpm: summary.wpm,
       accuracy: summary.accuracy,
       xp,
+      unlocked: recorded.unlocked,
+      dailyJustCompleted: recorded.dailyJustCompleted,
     });
     setView("results");
   }
@@ -321,6 +326,10 @@ export function WordRainView() {
                 <dd className="text-2xl">+{result.xp}</dd>
               </div>
             </dl>
+            <MetaUnlocks
+              unlocked={result.unlocked}
+              dailyJustCompleted={result.dailyJustCompleted}
+            />
             <button
               type="button"
               onClick={start}

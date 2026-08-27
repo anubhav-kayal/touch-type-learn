@@ -14,11 +14,12 @@ import {
 } from "@keypath/curriculum";
 import { calculateAccuracy } from "@keypath/typing-engine";
 import type { TypingSnapshot } from "@keypath/typing-engine";
-import { masteryForKeyStat, pickWeakKeys } from "@keypath/scoring";
+import { masteryForKeyStat, pickWeakKeys, type AchievementDef } from "@keypath/scoring";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { submitPracticeAttempt } from "@/app/actions/practice";
 import { TypingSurface } from "@/components/lesson/TypingSurface";
+import { MetaUnlocks } from "@/components/progress/MetaUnlocks";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { useKeyStats } from "@/hooks/use-key-stats";
 import { useLessonStars } from "@/hooks/use-lesson-stars";
@@ -57,7 +58,12 @@ export function PracticePlayer({ mode }: PracticePlayerProps) {
   const [customDraft, setCustomDraft] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
   const [droppedNote, setDroppedNote] = useState<string | null>(null);
-  const [result, setResult] = useState<{ accuracy: number; wpm: number } | null>(null);
+  const [result, setResult] = useState<{
+    accuracy: number;
+    wpm: number;
+    unlocked: AchievementDef[];
+    dailyJustCompleted: boolean;
+  } | null>(null);
 
   const blocked = blockedReason(mode, pick.focus, allowedKeys);
 
@@ -99,12 +105,13 @@ export function PracticePlayer({ mode }: PracticePlayerProps) {
   function onComplete(snapshot: TypingSnapshot) {
     const keyStatsDelta = snapshotKeyStats([snapshot]);
     const accuracy = calculateAccuracy(snapshot.correctKeystrokes, snapshot.errorKeystrokes);
-    recordPracticeAttempt({
+    const recorded = recordPracticeAttempt({
       wpm: snapshot.wpm,
       accuracy,
       durationMs: snapshot.durationMs,
       consistency: snapshot.consistency,
       keyStats: keyStatsDelta,
+      practiceMode: mode.id,
     });
     void submitPracticeAttempt({
       durationMs: snapshot.durationMs,
@@ -116,10 +123,13 @@ export function PracticePlayer({ mode }: PracticePlayerProps) {
       correctedErrors: snapshot.correctedErrors,
       maxCombo: snapshot.maxCombo,
       keyStats: keyStatsDelta,
+      mode: mode.id,
     });
     setResult({
       accuracy,
       wpm: snapshot.wpm,
+      unlocked: recorded.unlocked,
+      dailyJustCompleted: recorded.dailyJustCompleted,
     });
     setView("results");
   }
@@ -176,7 +186,9 @@ export function PracticePlayer({ mode }: PracticePlayerProps) {
                 Practice complete
               </p>
               <h1 className="font-display text-3xl text-ink">Keys updated</h1>
-              <p className="mt-2 font-mono text-xs text-legend">No XP. Streak stays as it was.</p>
+              <p className="mt-2 font-mono text-xs text-legend">
+                Practice does not add lesson XP or extend your streak.
+              </p>
             </div>
             <dl className="grid grid-cols-2 gap-4 font-mono">
               <div className="rounded-2xl bg-keycap px-5 py-4">
@@ -190,6 +202,10 @@ export function PracticePlayer({ mode }: PracticePlayerProps) {
                 <dd className="text-2xl text-ink">{result.wpm.toFixed(0)}</dd>
               </div>
             </dl>
+            <MetaUnlocks
+              unlocked={result.unlocked}
+              dailyJustCompleted={result.dailyJustCompleted}
+            />
             <div className="flex flex-col gap-3">
               <button
                 type="button"

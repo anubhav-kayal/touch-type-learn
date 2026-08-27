@@ -14,6 +14,7 @@ import {
 import type {
   AttemptPoint,
   DailyBucket,
+  DailyChallengeState,
   GuestKeyStat,
   GuestStreak,
   ProgressSnapshot,
@@ -22,6 +23,12 @@ import { validateAttemptPayload } from "@/lib/attempts/validate";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { parseGuestSnapshot } from "@/lib/guest-snapshot";
+import {
+  loadMetaIntoSnapshot,
+  loadPriorTimedBestWpm,
+  persistMetaAfterAttempt,
+  writeMetaTables,
+} from "@/lib/persist-meta";
 import type { Json } from "@/lib/supabase/database.types";
 
 type ActionClient = Awaited<ReturnType<typeof createClient>>;
@@ -35,18 +42,23 @@ type ProgressResult = {
   keyStats: Record<string, GuestKeyStat>;
   recentAttempts: AttemptPoint[];
   daily: Record<string, DailyBucket>;
+  achievements: Record<string, string>;
+  dailyChallenge: DailyChallengeState;
 };
 
 function emptyProgressResult(ok = false): ProgressResult {
+  const empty = emptyProgressSnapshot();
   return {
     ok,
     stars: {},
     xp: 0,
     level: 1,
-    streak: emptyProgressSnapshot().streak,
+    streak: empty.streak,
     keyStats: {},
     recentAttempts: [],
     daily: {},
+    achievements: {},
+    dailyChallenge: empty.dailyChallenge,
   };
 }
 
@@ -139,6 +151,7 @@ async function loadAccountSnapshot(
       xpEarned: row.xp_earned,
     };
   }
+  await loadMetaIntoSnapshot(supabase, userId, snapshot);
   return snapshot;
 }
 
@@ -212,6 +225,8 @@ async function writeProgressSnapshot(
     .eq("user_id", userId)
     .gte("stars", 1)
     .is("first_completed_at", null);
+
+  await writeMetaTables(supabase, userId, snapshot);
 }
 
 function starsFromProgress(snapshot: ProgressSnapshot): Record<string, number> {
@@ -389,6 +404,7 @@ export async function submitLessonAttempt(input: unknown): Promise<{
   const passed = stars >= 1;
   const nextStreak = passed ? applyStreakOnPass(currentStreak) : currentStreak;
   const nextXp = (profile?.xp ?? 0) + awarded.total;
+  const priorTimedBestWpm = await loadPriorTimedBestWpm(auth.supabase, auth.user.id);
 
   const { error } = await auth.supabase.from("lesson_attempts").insert({
     user_id: auth.user.id,
@@ -426,6 +442,17 @@ export async function submitLessonAttempt(input: unknown): Promise<{
     .update({ xp: nextXp, level: levelFromXp(nextXp) })
     .eq("id", auth.user.id);
 
+  await persistMetaAfterAttempt(auth.supabase, auth.user.id, {
+    lessonId: payload.lessonId,
+    stars,
+    accuracy: payload.accuracy,
+    wpm: payload.wpm,
+    durationMs: payload.durationMs,
+    characters: Object.values(payload.keyStats).reduce((sum, row) => sum + row.attempts, 0),
+    source: "lesson",
+    priorTimedBestWpm,
+  });
+
   return { persisted: true, stars };
 }
 
@@ -439,6 +466,8 @@ function toProgressResult(snapshot: ProgressSnapshot): ProgressResult {
     keyStats: snapshot.keyStats,
     recentAttempts: snapshot.recentAttempts,
     daily: snapshot.daily,
+    achievements: snapshot.achievements,
+    dailyChallenge: snapshot.dailyChallenge,
   };
 }
 

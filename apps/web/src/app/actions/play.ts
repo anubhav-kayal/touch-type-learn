@@ -10,6 +10,7 @@ import {
 } from "@keypath/scoring";
 import type { GuestStreak } from "@keypath/shared-types";
 import { validateWordRainPayload } from "@/lib/attempts/validate";
+import { loadPriorTimedBestWpm, persistMetaAfterAttempt } from "@/lib/persist-meta";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
@@ -41,6 +42,7 @@ export async function submitWordRainAttempt(input: unknown): Promise<{
     missed: validated.missed,
     accuracy: validated.accuracy,
   });
+  const priorTimedBestWpm = await loadPriorTimedBestWpm(supabase, user.id);
 
   const now = new Date().toISOString();
   const { error } = await supabase.from("lesson_attempts").insert({
@@ -150,6 +152,16 @@ export async function submitWordRainAttempt(input: unknown): Promise<{
       level: levelFromXp(nextXp),
     }).eq("id", user.id);
   }
+
+  await persistMetaAfterAttempt(supabase, user.id, {
+    stars: 0,
+    accuracy: validated.accuracy,
+    wpm: validated.wpm,
+    durationMs: validated.durationMs,
+    characters,
+    source: "word-rain",
+    priorTimedBestWpm,
+  });
 
   return { persisted: true, xp };
 }

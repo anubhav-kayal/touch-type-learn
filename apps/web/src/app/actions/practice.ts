@@ -2,6 +2,7 @@
 
 import { applyKeyStatDelta, masteryForKeyStat, utcDateString } from "@keypath/scoring";
 import { validatePracticePayload } from "@/lib/attempts/validate";
+import { loadPriorTimedBestWpm, persistMetaAfterAttempt } from "@/lib/persist-meta";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
@@ -27,6 +28,7 @@ export async function submitPracticeAttempt(input: unknown): Promise<{
     return { persisted: false, reason: "unauthenticated" };
   }
 
+  const priorTimedBestWpm = await loadPriorTimedBestWpm(supabase, user.id);
   const now = new Date().toISOString();
   const { error } = await supabase.from("lesson_attempts").insert({
     user_id: user.id,
@@ -105,6 +107,17 @@ export async function submitPracticeAttempt(input: unknown): Promise<{
     },
     { onConflict: "user_id,date" },
   );
+
+  await persistMetaAfterAttempt(supabase, user.id, {
+    stars: 0,
+    accuracy: validated.accuracy,
+    wpm: validated.wpm,
+    durationMs: validated.durationMs,
+    characters,
+    source: "practice",
+    practiceMode: validated.practiceMode,
+    priorTimedBestWpm,
+  });
 
   return { persisted: true };
 }

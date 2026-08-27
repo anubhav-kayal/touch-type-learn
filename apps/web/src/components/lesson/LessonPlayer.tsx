@@ -66,7 +66,7 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
               : undefined,
           })
         : EMPTY_XP_BREAKDOWN;
-    const snapshot = recordGuestAttempt({
+    const recorded = recordGuestAttempt({
       lessonId: lesson.id,
       stars,
       wpm: last?.wpm ?? 0,
@@ -97,9 +97,11 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       stars,
       isBoss: Boolean(lesson.isBoss),
       xp: awarded,
-      totalXp: snapshot.xp,
-      level: levelFromXp(snapshot.xp),
-      streakDays: snapshot.streak.currentStreak,
+      totalXp: recorded.snapshot.xp,
+      level: levelFromXp(recorded.snapshot.xp),
+      streakDays: recorded.snapshot.streak.currentStreak,
+      unlocked: recorded.unlocked,
+      dailyJustCompleted: recorded.dailyJustCompleted,
     });
     setView("results");
   }
