@@ -480,7 +480,7 @@ Among keys the user has **unlocked** and practiced at least `MIN_ATTEMPTS` (10):
 - Take the bottom 3–5
 - Generate drills that stay inside `allowedKeys` for that learner’s furthest lesson (or the practice mode’s key set)
 
-Do not introduce unlearned keys in adaptive practice.
+Do not introduce unlearned keys in adaptive practice. The Practice page (`/practice`) uses `practiceAllowedKeys` (the furthest unlocked lesson’s `allowedKeys`) and `pickWeakKeys`. Empty weak-key sets send the learner back to Learn.
 
 ### Practice selection
 

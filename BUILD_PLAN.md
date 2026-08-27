@@ -13,7 +13,7 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                       |
 | ------------ | --------------------------- |
-| Active phase | Phase 6 — Adaptive practice |
+| Active phase | Phase 7 — Dashboard and statistics |
 | Last updated | 2026-08-27                  |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–13                  |
@@ -419,7 +419,7 @@ Shipped 2026-08-27. Stars were already in `calculateStars`; this phase adds `cal
 
 ## Phase 6 — Adaptive practice
 
-**Status:** `not started`
+**Status:** `done`
 
 ### Objective
 
@@ -435,10 +435,10 @@ Per-key mastery and a Practice entry that drills weak keys without violating `al
 
 ### Technical tasks
 
-- [ ] Scoring: mastery, weak-key picker
-- [ ] Curriculum: drill generator from a key set
-- [ ] Server Action to upsert key stats in bulk after attempt
-- [ ] Guest: same stats in localStorage
+- [x] Scoring: mastery, weak-key picker
+- [x] Curriculum: drill generator from a key set
+- [x] Server Action to upsert key stats in bulk after attempt
+- [x] Guest: same stats in localStorage
 
 ### Database changes
 
@@ -461,6 +461,10 @@ Mastery low at n=3 even with 100% hits. Weak keys ignore locked letters. Generat
 
 - EMA latency initialization (first hit should not mark a key “slow forever”)
 - Empty weak-key set for brand-new users — show “complete more Learn lessons”
+
+### Phase notes
+
+Shipped 2026-08-27. Mastery lives in `calculateMastery` with the PROJECT.md constants (`MIN_KEY_ATTEMPTS` 10, Bayesian prior, `1 - exp(-n/30)` confidence, latency 180–600ms). Latency is ignored until 4 samples so a first slow hit cannot dominate. `/practice` picks 3–5 weakest unlocked keys and generates drills that `assertAllowedKeys`. Guests store the same counters in `keypath.guest.v1`; signed-in upserts include `mastery_score`. Practice does not award XP or extend the streak.
 
 ---
 
