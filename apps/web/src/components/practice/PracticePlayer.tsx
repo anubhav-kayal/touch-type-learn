@@ -15,11 +15,11 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { submitPracticeAttempt } from "@/app/actions/practice";
-import { AuthBar } from "@/components/auth/AuthBar";
 import { TypingSurface } from "@/components/lesson/TypingSurface";
+import { AppHeader } from "@/components/shell/AppHeader";
 import { useKeyStats } from "@/hooks/use-key-stats";
 import { useLessonStars } from "@/hooks/use-lesson-stars";
-import { recordPracticeKeyStats } from "@/lib/guest-progress";
+import { recordPracticeAttempt } from "@/lib/guest-progress";
 import { snapshotKeyStats } from "@/lib/snapshot-key-stats";
 
 type View = "ready" | "drill" | "results";
@@ -66,13 +66,20 @@ export function PracticePlayer() {
 
   function onComplete(snapshot: TypingSnapshot) {
     const keyStatsDelta = snapshotKeyStats([snapshot]);
-    recordPracticeKeyStats(keyStatsDelta);
+    const accuracy = calculateAccuracy(snapshot.correctKeystrokes, snapshot.errorKeystrokes);
+    recordPracticeAttempt({
+      wpm: snapshot.wpm,
+      accuracy,
+      durationMs: snapshot.durationMs,
+      consistency: snapshot.consistency,
+      keyStats: keyStatsDelta,
+    });
     void submitPracticeAttempt({
       durationMs: snapshot.durationMs,
       keyStats: keyStatsDelta,
     });
     setResult({
-      accuracy: calculateAccuracy(snapshot.correctKeystrokes, snapshot.errorKeystrokes),
+      accuracy,
       wpm: snapshot.wpm,
     });
     setView("results");
@@ -80,23 +87,7 @@ export function PracticePlayer() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-desk text-ink">
-      <header className="flex items-center justify-between px-6 py-5">
-        <Link
-          href="/learn"
-          className="font-display text-sm tracking-wide text-legend hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bump"
-        >
-          Keypath
-        </Link>
-        <div className="flex items-center gap-5">
-          <Link
-            href="/learn"
-            className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink"
-          >
-            Course map
-          </Link>
-          <AuthBar />
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center px-6 pb-16">
         {view === "ready" ? (

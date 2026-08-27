@@ -12,6 +12,8 @@ import {
   utcDateString,
 } from "@keypath/scoring";
 import type {
+  AttemptPoint,
+  DailyBucket,
   GuestKeyStat,
   GuestStreak,
   ProgressSnapshot,
@@ -31,6 +33,8 @@ type ProgressResult = {
   level: number;
   streak: GuestStreak;
   keyStats: Record<string, GuestKeyStat>;
+  recentAttempts: AttemptPoint[];
+  daily: Record<string, DailyBucket>;
 };
 
 function emptyProgressResult(ok = false): ProgressResult {
@@ -41,6 +45,8 @@ function emptyProgressResult(ok = false): ProgressResult {
     level: 1,
     streak: emptyProgressSnapshot().streak,
     keyStats: {},
+    recentAttempts: [],
+    daily: {},
   };
 }
 
@@ -62,13 +68,26 @@ async function loadAccountSnapshot(
   supabase: ActionClient,
   userId: string,
 ): Promise<ProgressSnapshot> {
-  const [{ data: profile }, { data: progressRows }, { data: keyRows }, { data: streakRow }] =
-    await Promise.all([
-      supabase.from("profiles").select("xp").eq("id", userId).maybeSingle(),
-      supabase.from("user_progress").select("*").eq("user_id", userId),
-      supabase.from("user_key_stats").select("*").eq("user_id", userId),
-      supabase.from("streaks").select("*").eq("user_id", userId).maybeSingle(),
-    ]);
+  const [
+    { data: profile },
+    { data: progressRows },
+    { data: keyRows },
+    { data: streakRow },
+    { data: attemptRows },
+    { data: dailyRows },
+  ] = await Promise.all([
+    supabase.from("profiles").select("xp").eq("id", userId).maybeSingle(),
+    supabase.from("user_progress").select("*").eq("user_id", userId),
+    supabase.from("user_key_stats").select("*").eq("user_id", userId),
+    supabase.from("streaks").select("*").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("lesson_attempts")
+      .select("lesson_id, duration_ms, wpm, accuracy, consistency, key_stats, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(40),
+    supabase.from("daily_stats").select("*").eq("user_id", userId),
+  ]);
 
   const snapshot = emptyProgressSnapshot();
   snapshot.xp = profile?.xp ?? 0;
@@ -98,7 +117,46 @@ async function loadAccountSnapshot(
       practiceDaysMonth: streakRow.practice_days_month,
     };
   }
+  snapshot.recentAttempts = (attemptRows ?? [])
+    .slice()
+    .reverse()
+    .map((row) => ({
+      at: row.created_at,
+      lessonId: row.lesson_id,
+      wpm: Number(row.wpm),
+      accuracy: Number(row.accuracy),
+      consistency: row.consistency === null ? null : Number(row.consistency),
+      durationMs: row.duration_ms,
+      characters: charactersFromKeyStats(row.key_stats),
+      source: "lesson" as const,
+    }));
+  for (const row of dailyRows ?? []) {
+    snapshot.daily[row.date] = {
+      date: row.date,
+      practiceMinutes: Number(row.practice_minutes),
+      characters: row.characters,
+      lessonsCompleted: row.lessons_completed,
+      xpEarned: row.xp_earned,
+    };
+  }
   return snapshot;
+}
+
+function charactersFromKeyStats(value: Json): number {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return 0;
+  }
+  let total = 0;
+  for (const row of Object.values(value)) {
+    if (isRecord(row) && typeof row.attempts === "number") {
+      total += row.attempts;
+    }
+  }
+  return total;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function writeProgressSnapshot(
@@ -379,6 +437,8 @@ function toProgressResult(snapshot: ProgressSnapshot): ProgressResult {
     level: levelFromXp(snapshot.xp),
     streak: snapshot.streak,
     keyStats: snapshot.keyStats,
+    recentAttempts: snapshot.recentAttempts,
+    daily: snapshot.daily,
   };
 }
 

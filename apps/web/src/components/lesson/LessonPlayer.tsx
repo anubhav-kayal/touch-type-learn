@@ -73,6 +73,8 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       accuracy,
       xpAwarded: awarded.total,
       keyStats,
+      durationMs: all.reduce((sum, item) => sum + item.durationMs, 0),
+      consistency: last?.consistency ?? null,
     });
     void submitLessonAttempt({
       lessonId: lesson.id,
