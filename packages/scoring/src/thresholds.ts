@@ -17,3 +17,26 @@ export const XP = {
 
 export const LEVEL_XP_BASE = 80;
 export const LEVEL_XP_EXPONENT = 1.35;
+
+export const MIN_KEY_ATTEMPTS = 10;
+
+export const MASTERY = {
+  priorCorrect: 2,
+  priorAttempts: 4,
+  confidenceScale: 30,
+  latencyFastMs: 180,
+  latencySlowMs: 600,
+  latencyNeutralUntilAttempts: 4,
+  recencyEmaNew: 0.3,
+  latencyEmaNew: 0.3,
+  weights: {
+    accuracy: 0.45,
+    latency: 0.25,
+    recency: 0.2,
+    consistency: 0.1,
+  },
+} as const;
+
+export const WEAK_KEY_TAKE_MIN = 3;
+export const WEAK_KEY_TAKE_MAX = 5;
+export const PRACTICE_EXPLORE_WEIGHT = 0.15;

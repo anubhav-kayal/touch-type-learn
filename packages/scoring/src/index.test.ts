@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PACKAGE_NAME, STAR_ACCURACY, XP, xpRequiredToReach } from "./index";
+import { PACKAGE_NAME, MIN_KEY_ATTEMPTS, STAR_ACCURACY, XP, xpRequiredToReach } from "./index";
 
 describe("@keypath/scoring", () => {
   it("exports the package name", () => {
@@ -14,5 +14,9 @@ describe("@keypath/scoring", () => {
     expect(XP.accuracyPerfect).toBe(50);
     expect(XP.accuracyHigh).toBe(20);
     expect(xpRequiredToReach(2)).toBe(Math.floor(80 * 2 ** 1.35));
+  });
+
+  it("requires 10 attempts before a key can be weak", () => {
+    expect(MIN_KEY_ATTEMPTS).toBe(10);
   });
 });
