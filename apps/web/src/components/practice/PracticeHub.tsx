@@ -59,6 +59,13 @@ export function PracticeHub() {
             <p className="text-sm text-legend">{custom.blurb}</p>
           </Link>
         ) : null}
+
+        <Link
+          href="/play"
+          className="text-sm text-legend underline-offset-4 hover:text-ink hover:underline"
+        >
+          Or play Word Rain
+        </Link>
       </main>
     </div>
   );

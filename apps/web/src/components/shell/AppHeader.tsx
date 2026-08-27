@@ -36,6 +36,12 @@ export function AppHeader({ extra }: AppHeaderProps) {
           Practice
         </Link>
         <Link
+          href="/play"
+          className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink"
+        >
+          Play
+        </Link>
+        <Link
           href="/stats"
           className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink"
         >
