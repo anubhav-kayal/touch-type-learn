@@ -1,12 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import {
-  getCurrentLessonId,
-  listPlayableLessons,
-  getWorlds,
-} from "@keypath/curriculum";
 import Link from "next/link";
+import { getContinueTarget } from "@/lib/continue-target";
 import { useLessonStars } from "@/hooks/use-lesson-stars";
 
 interface ContinueLinkProps {
@@ -16,11 +12,10 @@ interface ContinueLinkProps {
 
 export function ContinueLink({ className, children }: ContinueLinkProps) {
   const stars = useLessonStars();
-  const lessonId =
-    getCurrentLessonId(listPlayableLessons(getWorlds()), stars) ?? "w1-orient";
+  const { href } = getContinueTarget(stars);
 
   return (
-    <Link href={`/learn/${lessonId}`} className={className}>
+    <Link href={href} className={className} data-testid="continue-cta">
       {children}
     </Link>
   );
