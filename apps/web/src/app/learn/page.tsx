@@ -23,6 +23,12 @@ export default function LearnMapPage() {
           <ContinueLink className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink">
             Continue
           </ContinueLink>
+          <Link
+            href="/practice"
+            className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink"
+          >
+            Practice
+          </Link>
           <AuthBar />
         </div>
       </header>

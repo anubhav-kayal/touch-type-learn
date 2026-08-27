@@ -31,6 +31,12 @@ export default function Home() {
           >
             Course map
           </Link>
+          <Link
+            href="/practice"
+            className="w-fit rounded-full border border-ink/15 px-6 py-3 font-display text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bump"
+          >
+            Practice
+          </Link>
         </div>
       </div>
       <p className="font-mono text-xs text-legend">World 1 · Finger Foundations</p>
