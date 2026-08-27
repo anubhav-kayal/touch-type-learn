@@ -82,7 +82,7 @@ async function loadAccountSnapshot(
     supabase.from("streaks").select("*").eq("user_id", userId).maybeSingle(),
     supabase
       .from("lesson_attempts")
-      .select("lesson_id, duration_ms, wpm, accuracy, consistency, key_stats, created_at")
+      .select("lesson_id, source, duration_ms, wpm, accuracy, consistency, key_stats, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(40),
@@ -128,7 +128,7 @@ async function loadAccountSnapshot(
       consistency: row.consistency === null ? null : Number(row.consistency),
       durationMs: row.duration_ms,
       characters: charactersFromKeyStats(row.key_stats),
-      source: "lesson" as const,
+      source: row.source === "practice" ? ("practice" as const) : ("lesson" as const),
     }));
   for (const row of dailyRows ?? []) {
     snapshot.daily[row.date] = {

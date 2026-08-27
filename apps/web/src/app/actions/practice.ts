@@ -4,6 +4,7 @@ import { applyKeyStatDelta, masteryForKeyStat, utcDateString } from "@keypath/sc
 import { validatePracticePayload } from "@/lib/attempts/validate";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/database.types";
 
 export async function submitPracticeAttempt(input: unknown): Promise<{
   persisted: boolean;
@@ -27,6 +28,26 @@ export async function submitPracticeAttempt(input: unknown): Promise<{
   }
 
   const now = new Date().toISOString();
+  const { error } = await supabase.from("lesson_attempts").insert({
+    user_id: user.id,
+    lesson_id: null,
+    source: "practice",
+    duration_ms: validated.durationMs,
+    wpm: validated.wpm,
+    raw_wpm: validated.rawWpm,
+    accuracy: validated.accuracy,
+    consistency: validated.consistency,
+    errors: validated.errors,
+    corrected_errors: validated.correctedErrors,
+    max_combo: validated.maxCombo,
+    xp_earned: 0,
+    stars: 0,
+    key_stats: validated.keyStats as unknown as Json,
+  });
+  if (error) {
+    return { persisted: false, reason: "invalid", error: error.message };
+  }
+
   for (const stat of Object.values(validated.keyStats)) {
     const { data: current } = await supabase
       .from("user_key_stats")
