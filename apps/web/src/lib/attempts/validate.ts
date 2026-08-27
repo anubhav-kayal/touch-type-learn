@@ -180,3 +180,20 @@ export function validatePracticePayload(input: unknown): PracticeValidation {
     keyStats,
   };
 }
+
+export type WordRainValidation =
+  | (Extract<PracticeValidation, { ok: true }> & { caught: number; missed: number })
+  | { ok: false; error: string };
+
+export function validateWordRainPayload(input: unknown): WordRainValidation {
+  const base = validatePracticePayload(input);
+  if (!base.ok || !isRecord(input)) {
+    return base.ok ? { ok: false, error: "Invalid Word Rain payload." } : base;
+  }
+  const caught = nonNegativeInt(input.caught);
+  const missed = nonNegativeInt(input.missed);
+  if (caught === null || missed === null || caught > 500 || missed > 50) {
+    return { ok: false, error: "Word Rain numbers are out of range." };
+  }
+  return { ...base, caught, missed };
+}

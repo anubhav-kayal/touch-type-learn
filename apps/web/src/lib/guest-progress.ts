@@ -251,6 +251,53 @@ export function recordPracticeAttempt(input: {
   return next;
 }
 
+export function recordWordRainAttempt(input: {
+  wpm: number;
+  accuracy: number;
+  durationMs: number;
+  consistency?: number | null;
+  keyStats: Record<string, GuestKeyStat>;
+  caught: number;
+  missed: number;
+  xpAwarded?: number;
+  now?: Date;
+}): GuestSnapshot {
+  const current = readGuestSnapshot();
+  const keyStats = { ...current.keyStats };
+  for (const row of Object.values(input.keyStats)) {
+    keyStats[row.key] = applyKeyStatDelta(keyStats[row.key], row);
+  }
+  const characters = Object.values(input.keyStats).reduce((sum, row) => sum + row.attempts, 0);
+  const now = input.now ?? new Date();
+  const xpAwarded = Math.max(0, input.xpAwarded ?? 0);
+  const passed = input.caught >= 1;
+  const next: GuestSnapshot = {
+    ...current,
+    keyStats,
+    xp: current.xp + xpAwarded,
+    streak: passed ? applyStreakOnPass(current.streak, now) : current.streak,
+    recentAttempts: appendAttemptPoint(current.recentAttempts ?? [], {
+      at: now.toISOString(),
+      lessonId: null,
+      wpm: input.wpm,
+      accuracy: input.accuracy,
+      consistency: input.consistency ?? null,
+      durationMs: input.durationMs,
+      characters,
+      source: "word-rain",
+    }),
+    daily: addDailyActivity(current.daily ?? {}, {
+      now,
+      minutes: input.durationMs / 60_000,
+      characters,
+      lessonsCompleted: 0,
+      xpEarned: xpAwarded,
+    }),
+  };
+  writeGuestSnapshot(next);
+  return next;
+}
+
 export function recordPracticeKeyStats(
   incoming: Record<string, GuestKeyStat>,
 ): GuestSnapshot {

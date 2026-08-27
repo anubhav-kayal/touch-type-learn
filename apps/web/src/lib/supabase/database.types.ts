@@ -103,7 +103,7 @@ export interface Database {
           id: string;
           user_id: string;
           lesson_id: string | null;
-          source: "lesson" | "practice";
+          source: "lesson" | "practice" | "word-rain";
           duration_ms: number;
           wpm: number;
           raw_wpm: number;
@@ -120,7 +120,7 @@ export interface Database {
         {
           user_id: string;
           lesson_id?: string | null;
-          source?: "lesson" | "practice";
+          source?: "lesson" | "practice" | "word-rain";
           duration_ms: number;
           wpm: number;
           raw_wpm: number;

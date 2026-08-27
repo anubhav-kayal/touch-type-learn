@@ -128,7 +128,7 @@ async function loadAccountSnapshot(
       consistency: row.consistency === null ? null : Number(row.consistency),
       durationMs: row.duration_ms,
       characters: charactersFromKeyStats(row.key_stats),
-      source: row.source === "practice" ? ("practice" as const) : ("lesson" as const),
+      source: row.source === "practice" || row.source === "word-rain" ? row.source : "lesson",
     }));
   for (const row of dailyRows ?? []) {
     snapshot.daily[row.date] = {

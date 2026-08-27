@@ -69,7 +69,7 @@ function parseAttemptPoint(value: unknown): AttemptPoint | null {
     consistency,
     durationMs,
     characters,
-    source: value.source === "practice" ? "practice" : "lesson",
+    source: value.source === "practice" || value.source === "word-rain" ? value.source : "lesson",
   };
 }
 

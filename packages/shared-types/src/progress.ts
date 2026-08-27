@@ -38,7 +38,7 @@ export interface AttemptPoint {
   consistency: number | null;
   durationMs: number;
   characters: number;
-  source: "lesson" | "practice";
+  source: "lesson" | "practice" | "word-rain";
 }
 
 export interface DailyBucket {
