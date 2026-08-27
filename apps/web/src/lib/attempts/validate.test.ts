@@ -1,4 +1,4 @@
-import { validateAttemptPayload } from "@/lib/attempts/validate";
+import { validateAttemptPayload, validatePracticePayload } from "@/lib/attempts/validate";
 import { describe, expect, it } from "vitest";
 
 const valid = {
@@ -34,5 +34,15 @@ describe("validateAttemptPayload", () => {
   it("rejects inflated accuracy", () => {
     const result = validateAttemptPayload({ ...valid, accuracy: 1.2 });
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("validatePracticePayload", () => {
+  it("accepts key stats without a lesson id", () => {
+    const result = validatePracticePayload({
+      durationMs: 8000,
+      keyStats: valid.keyStats,
+    });
+    expect(result.ok).toBe(true);
   });
 });

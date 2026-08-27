@@ -21,7 +21,7 @@ function nonNegativeInt(value: unknown): number | null {
   return n;
 }
 
-function parseKeyStats(value: unknown): Record<string, GuestKeyStat> | null {
+export function parseKeyStats(value: unknown): Record<string, GuestKeyStat> | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -122,4 +122,20 @@ export function validateAttemptPayload(input: unknown): AttemptValidation {
       keyStats,
     },
   };
+}
+
+export type PracticeValidation =
+  | { ok: true; durationMs: number; keyStats: Record<string, GuestKeyStat> }
+  | { ok: false; error: string };
+
+export function validatePracticePayload(input: unknown): PracticeValidation {
+  if (!isRecord(input)) {
+    return { ok: false, error: "Invalid practice payload." };
+  }
+  const durationMs = nonNegativeInt(input.durationMs);
+  const keyStats = parseKeyStats(input.keyStats);
+  if (durationMs === null || durationMs > MAX_DURATION_MS || keyStats === null) {
+    return { ok: false, error: "Practice numbers are out of range." };
+  }
+  return { ok: true, durationMs, keyStats };
 }

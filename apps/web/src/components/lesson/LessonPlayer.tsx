@@ -8,14 +8,14 @@ import {
 } from "@keypath/curriculum";
 import type { Lesson } from "@keypath/curriculum";
 import { calculateStars, calculateXp, EMPTY_XP_BREAKDOWN, levelFromXp } from "@keypath/scoring";
-import type { GuestKeyStat } from "@keypath/shared-types";
 import { calculateAccuracy } from "@keypath/typing-engine";
-import type { KeyStatSummary, TypingSnapshot } from "@keypath/typing-engine";
+import type { TypingSnapshot } from "@keypath/typing-engine";
 import Link from "next/link";
 import { useState } from "react";
 import { submitLessonAttempt } from "@/app/actions/progress";
 import { AuthBar } from "@/components/auth/AuthBar";
 import { recordGuestAttempt, readGuestSnapshot } from "@/lib/guest-progress";
+import { snapshotKeyStats } from "@/lib/snapshot-key-stats";
 import { IntroCard } from "./IntroCard";
 import { ResultsCard } from "./ResultsCard";
 import type { LessonResultView } from "./ResultsCard";
@@ -47,7 +47,7 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       wpm: last?.wpm,
       targetWpm: lesson.targetWpm,
     });
-    const keyStats = mergeKeyStats(all);
+    const keyStats = snapshotKeyStats(all);
     const previous = readGuestSnapshot().progress[lesson.id];
     const awarded =
       stars >= 1
@@ -143,6 +143,12 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
           <p className="font-mono text-xs tracking-[0.18em] text-legend uppercase">
             {lesson.isBoss ? `Boss · ${lesson.title}` : lesson.title}
           </p>
+          <Link
+            href="/practice"
+            className="font-mono text-xs tracking-[0.18em] text-legend uppercase hover:text-ink"
+          >
+            Practice
+          </Link>
           <AuthBar />
         </div>
       </header>
@@ -182,44 +188,4 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
       </main>
     </div>
   );
-}
-
-function toGuestKeyStat(row: KeyStatSummary): GuestKeyStat {
-  return {
-    key: row.key,
-    attempts: row.attempts,
-    correct: row.correct,
-    errors: row.errors,
-    averageLatencyMs: row.averageLatencyMs,
-  };
-}
-
-function mergeKeyStats(snapshots: TypingSnapshot[]): Record<string, GuestKeyStat> {
-  const merged: Record<string, GuestKeyStat> = {};
-  for (const snapshot of snapshots) {
-    for (const row of Object.values(snapshot.keyStats)) {
-      const existing = merged[row.key];
-      if (!existing) {
-        merged[row.key] = toGuestKeyStat(row);
-        continue;
-      }
-      const attempts = existing.attempts + row.attempts;
-      let averageLatencyMs = existing.averageLatencyMs;
-      if (existing.averageLatencyMs !== null && row.averageLatencyMs !== null) {
-        averageLatencyMs =
-          (existing.averageLatencyMs * existing.attempts +
-            row.averageLatencyMs * row.attempts) / Math.max(attempts, 1);
-      } else {
-        averageLatencyMs = existing.averageLatencyMs ?? row.averageLatencyMs;
-      }
-      merged[row.key] = {
-        key: row.key,
-        attempts,
-        correct: existing.correct + row.correct,
-        errors: existing.errors + row.errors,
-        averageLatencyMs,
-      };
-    }
-  }
-  return merged;
 }
