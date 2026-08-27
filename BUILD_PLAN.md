@@ -13,7 +13,7 @@ Product and architecture: [`PROJECT.md`](./PROJECT.md).
 
 | Field        | Value                       |
 | ------------ | --------------------------- |
-| Active phase | Phase 10 — Daily challenges (post-MVP) |
+| Active phase | Phase 11 — Placement test (post-MVP) |
 | Last updated | 2026-08-27                  |
 | MVP =        | Phases 0–7                   |
 | Post-MVP =   | Phases 8–13                  |
@@ -620,7 +620,7 @@ Shipped 2026-08-27. `/play` is Word Rain only. Words fall toward a gold home-row
 
 ## Phase 10 — Daily challenges and achievements
 
-**Status:** `not started` (post-MVP)
+**Status:** `done` (post-MVP)
 
 ### Objective
 
@@ -655,6 +655,10 @@ Completing World 1 boss unlocks Home Row Hero. Dailies reset at UTC midnight.
 ### Known risks
 
 Timezone confusion — document UTC. Notification spam — show once on results.
+
+### Phase notes
+
+Shipped 2026-08-27. Everyone shares one UTC daily (`challengeForUtcDate`). Pool: 200 words at ≥95%, 3 weak-key drills, 3 passed lessons, or beat a ≥60s WPM best. Completing awards +100 XP once; a miss never subtracts. Achievements unlock in `evaluateAchievements` (Home Row Hero = 1★ on `w1-home-boss`). Guests keep both in `keypath.guest.v1`. Signed-in writes go through `persistMetaAfterAttempt` after the attempt; clients still do not send XP. Home shows today’s daily. Results show new unlocks once. Stats lists unlocked titles.
 
 ---
 

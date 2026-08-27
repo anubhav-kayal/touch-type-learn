@@ -122,7 +122,7 @@ Continuation, not analytics overload:
 - Current WPM + accuracy
 - Today’s practice
 - Weak keys
-- Daily challenge (when that phase lands)
+- Daily challenge (UTC midnight reset)
 
 ---
 
@@ -338,10 +338,12 @@ auth.users
             ├── daily_stats        (user × date)
             ├── streaks            (1:1 user)
             ├── user_settings      (1:1 user)
-            ├── user_achievements  (later)
-            └── user_daily_challenges (later)
+            ├── user_achievements
+            └── user_daily_challenges
 
 worlds 1──* lessons     (seeded metadata)
+achievements            (catalog)
+daily_challenges        (one row per UTC date)
 ```
 
 ### Tables (MVP)
@@ -387,9 +389,21 @@ Practice minutes, characters, lessons completed, XP earned. Unique `(user_id, da
 
 Sound, assistance override, reduced motion, keyboard labels.
 
-### Later tables
+**achievements**
 
-`achievements`, `user_achievements`, `daily_challenges`, `user_daily_challenges`.
+Catalog of unlockable titles (`first-lesson`, `perfect-run`, `speed-40`/`60`/`100`, `home-row-hero`, `marathon`, `precision`). Readable by guests.
+
+**user_achievements**
+
+`(user_id, achievement_id)` with `unlocked_at`. Insert is idempotent.
+
+**daily_challenges**
+
+One row per UTC date: which challenge the world shares that day. Computed from a date hash in `@keypath/scoring`.
+
+**user_daily_challenges**
+
+Progress for that UTC date. Completing awards +100 XP once. Missing a daily is never punished.
 
 ### Indexes
 
@@ -398,6 +412,8 @@ Sound, assistance override, reduced motion, keyboard labels.
 - `user_progress (user_id)`
 - `user_key_stats (user_id, mastery_score)`
 - `daily_stats (user_id, date desc)`
+- `user_achievements (user_id)`
+- `user_daily_challenges (user_id, date desc)`
 
 ### What is never stored
 
@@ -413,7 +429,7 @@ Sound, assistance override, reduced motion, keyboard labels.
 
 No account required to start World 1.
 
-Guest progress is stored in **versioned localStorage** (`keypath.guest.v1`). It includes completed lesson IDs, best stars, XP, key-stat summaries, and streak dates.
+Guest progress is stored in **versioned localStorage** (`keypath.guest.v1`). It includes completed lesson IDs, best stars, XP, key-stat summaries, streak dates, recent attempts, daily buckets, unlocked achievements, and the current UTC daily challenge.
 
 Guests are not given anonymous Supabase users. That would pollute `auth.users` and complicate merge.
 
@@ -449,9 +465,10 @@ RLS is enabled on every user-owned table. No client uses a service role key.
 
 | Data                                                                                            | SELECT                                                     | INSERT                    | UPDATE                 | DELETE                         |
 | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------- | ---------------------- | ------------------------------ |
-| `worlds`, `lessons`                                                                             | public (anon + authenticated)                              | none (seed / service)     | none                   | none                           |
+| `worlds`, `lessons`, `achievements`                                                             | public (anon + authenticated)                              | none (seed)               | none                   | none                           |
+| `daily_challenges`                                                                              | public (anon + authenticated)                              | authenticated upsert      | authenticated          | none                           |
 | `profiles`                                                                                      | own row; limited public fields later if profiles go public | own row on signup trigger | own row                | none                           |
-| `lesson_attempts`, `user_progress`, `user_key_stats`, `daily_stats`, `streaks`, `user_settings` | `auth.uid() = user_id`                                     | `auth.uid() = user_id`    | `auth.uid() = user_id` | `auth.uid() = user_id` or none |
+| `lesson_attempts`, `user_progress`, `user_key_stats`, `daily_stats`, `streaks`, `user_settings`, `user_achievements`, `user_daily_challenges` | `auth.uid() = user_id`                                     | `auth.uid() = user_id`    | `auth.uid() = user_id` | `auth.uid() = user_id` or none |
 
 New profiles are created by a trigger on `auth.users` insert, not by a client insert of arbitrary IDs.
 
@@ -555,11 +572,12 @@ Below 90% accuracy: lesson is not passed, no star, next lesson stays locked. Ear
 | Accuracy 100%                                              | +50 (replaces the 95% bonus) |
 | Personal record (best WPM or best accuracy on that lesson) | +30                          |
 | Boss completion (first time)                               | +100                         |
-| Daily challenge (later)                                    | +100                         |
+| Daily challenge (once per UTC day)                         | +100                         |
+| Achievements                                               | 20–100 (see catalog)         |
 
-XP rewards accuracy, consistency of practice, and improvement — not raw speed alone. Speed PRs can award the PR bonus, but there is no “typed 80 WPM” XP in beginner worlds. `packages/scoring` computes XP; the attempt payload does not include it. A personal-record bonus requires a prior attempt on that lesson. Failed lessons (0★) award no XP.
+XP rewards accuracy, consistency of practice, and improvement — not raw speed alone. Speed PRs can award the PR bonus, but there is no “typed 80 WPM” XP in beginner worlds. `packages/scoring` computes XP; the attempt payload does not include it. A personal-record bonus requires a prior attempt on that lesson. Failed lessons (0★) award no lesson XP. Daily and achievement XP is also computed in `@keypath/scoring` after the attempt; clients never send XP.
 
-Streaks use UTC dates. A passed lesson increments at most once per UTC day. A gap quietly resets `current_streak` to 1 — the UI never threatens a lost streak.
+Streaks and daily challenges use **UTC dates**. A passed lesson increments the streak at most once per UTC day. Dailies reset at UTC midnight; missing a daily is never punished. A gap quietly resets `current_streak` to 1 — the UI never threatens a lost streak.
 
 ### User level
 
@@ -690,13 +708,19 @@ Explicitly out of MVP:
 - Per-keystroke cloud replay
 - Streak freezes, gems, gacha, energy systems
 
-Planned after MVP (see BUILD_PLAN phases 8–13): expanded practice modes, Word Rain, daily challenges, achievements, placement test, polish, PostHog, then hosted public accounts.
+Planned after MVP (see BUILD_PLAN phases 11–13): placement test, polish, PostHog, then hosted public accounts.
 
 ---
 
 ## Architectural Decisions
 
 Record decisions here. Newest first.
+
+### ADR-021 — Daily challenges reset at UTC midnight; unlocks show once
+
+**Decision:** The shared daily is `challengeForUtcDate` in `@keypath/scoring` (200 words @95%, 3 weak-key drills, 3 lessons, or beat a ≥60s WPM best). Progress and awards live on the snapshot and in `user_daily_challenges`. Completing awards +100 XP once. Missing a daily does not reduce progress or XP. Achievements unlock in `evaluateAchievements` and persist to `user_achievements`; the same id never awards twice. New unlocks render once on the results screen.
+
+**Why:** Local midnight would split a traveler’s day. Punishing a missed daily fights the encourage-don’t-punish rule. Toast spam would make unlocks feel like errors.
 
 ### ADR-020 — Word Rain uses per-word TypingSession; RAF paints without React
 
@@ -712,7 +736,7 @@ Record decisions here. Newest first.
 
 ### ADR-018 — Guest v1 cache; merge without double XP; auth is optional
 
-**Decision:** Guest progress is `keypath.guest.v1` (stars, best WPM/accuracy, attempt counts, XP, key-stat summaries, streak dates, recent attempts, daily buckets). `keypath.progress.v1` is read once and upgraded. The Next.js app never uses the service role. Proxy refreshes the session but does not force login — `/learn` stays public. XP merge is `max(account.xp + XP from guest lessons the account had not completed, guest.xp)`.
+**Decision:** Guest progress is `keypath.guest.v1` (stars, best WPM/accuracy, attempt counts, XP, key-stat summaries, streak dates, recent attempts, daily buckets, achievements, UTC daily challenge). `keypath.progress.v1` is read once and upgraded. The Next.js app never uses the service role. Proxy refreshes the session but does not force login — `/learn` stays public. XP merge is `max(account.xp + XP from guest lessons the account had not completed + XP from guest achievements/dailies the account lacked, guest.xp)`.
 
 **Why:** Guests must keep working offline. Taking `max(account.xp, guest.xp)` and then adding new-lesson XP would double-count. Forcing login in proxy would block World 1.
 
