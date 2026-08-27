@@ -1,4 +1,6 @@
 import type {
+  AttemptPoint,
+  DailyBucket,
   GuestKeyStat,
   GuestLessonProgress,
   GuestSnapshot,
@@ -42,6 +44,67 @@ function parseKeyStat(key: string, value: unknown): GuestKeyStat | null {
         ? null
         : Math.max(0, asFiniteNumber(value.averageLatencyMs)),
   };
+}
+
+function parseAttemptPoint(value: unknown): AttemptPoint | null {
+  if (!isRecord(value) || typeof value.at !== "string") {
+    return null;
+  }
+  const wpm = asFiniteNumber(value.wpm);
+  const accuracy = asFiniteNumber(value.accuracy);
+  const durationMs = Math.max(0, Math.floor(asFiniteNumber(value.durationMs)));
+  const characters = Math.max(0, Math.floor(asFiniteNumber(value.characters)));
+  if (wpm < 0 || accuracy < 0 || accuracy > 1) {
+    return null;
+  }
+  const consistency =
+    value.consistency === null || value.consistency === undefined
+      ? null
+      : Math.max(0, Math.min(100, asFiniteNumber(value.consistency)));
+  return {
+    at: value.at,
+    lessonId: typeof value.lessonId === "string" ? value.lessonId : null,
+    wpm,
+    accuracy,
+    consistency,
+    durationMs,
+    characters,
+    source: value.source === "practice" ? "practice" : "lesson",
+  };
+}
+
+function parseDaily(value: unknown): Record<string, DailyBucket> {
+  if (!isRecord(value)) {
+    return {};
+  }
+  const daily: Record<string, DailyBucket> = {};
+  for (const [date, row] of Object.entries(value)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !isRecord(row)) {
+      continue;
+    }
+    daily[date] = {
+      date,
+      practiceMinutes: Math.max(0, asFiniteNumber(row.practiceMinutes)),
+      characters: Math.max(0, Math.floor(asFiniteNumber(row.characters))),
+      lessonsCompleted: Math.max(0, Math.floor(asFiniteNumber(row.lessonsCompleted))),
+      xpEarned: Math.max(0, Math.floor(asFiniteNumber(row.xpEarned))),
+    };
+  }
+  return daily;
+}
+
+function parseRecentAttempts(value: unknown): AttemptPoint[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const points: AttemptPoint[] = [];
+  for (const row of value) {
+    const parsed = parseAttemptPoint(row);
+    if (parsed) {
+      points.push(parsed);
+    }
+  }
+  return points.slice(-40);
 }
 
 function parseStreak(value: unknown): GuestStreak {
@@ -110,6 +173,8 @@ export function parseGuestSnapshot(raw: unknown): GuestSnapshot {
     xp: Math.max(0, Math.floor(asFiniteNumber(raw.xp))),
     keyStats,
     streak: parseStreak(raw.streak),
+    recentAttempts: parseRecentAttempts(raw.recentAttempts),
+    daily: parseDaily(raw.daily),
   };
 }
 

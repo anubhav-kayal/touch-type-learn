@@ -1,10 +1,13 @@
 import type {
+  AttemptPoint,
+  DailyBucket,
   GuestKeyStat,
   GuestLessonProgress,
   GuestSnapshot,
   GuestStreak,
   ProgressSnapshot,
 } from "@keypath/shared-types";
+import { RECENT_ATTEMPTS_MAX } from "./thresholds";
 
 export function emptyProgressSnapshot(): ProgressSnapshot {
   return {
@@ -12,6 +15,8 @@ export function emptyProgressSnapshot(): ProgressSnapshot {
     xp: 0,
     keyStats: {},
     streak: emptyStreak(),
+    recentAttempts: [],
+    daily: {},
   };
 }
 
@@ -123,6 +128,53 @@ export function mergeStreak(account: GuestStreak, guest: GuestStreak): GuestStre
   };
 }
 
+export function mergeDaily(
+  account: Record<string, DailyBucket>,
+  guest: Record<string, DailyBucket>,
+): Record<string, DailyBucket> {
+  const dates = new Set([...Object.keys(account), ...Object.keys(guest)]);
+  const daily: Record<string, DailyBucket> = {};
+  for (const date of dates) {
+    const left = account[date];
+    const right = guest[date];
+    daily[date] = {
+      date,
+      practiceMinutes: (left?.practiceMinutes ?? 0) + (right?.practiceMinutes ?? 0),
+      characters: (left?.characters ?? 0) + (right?.characters ?? 0),
+      lessonsCompleted: (left?.lessonsCompleted ?? 0) + (right?.lessonsCompleted ?? 0),
+      xpEarned: (left?.xpEarned ?? 0) + (right?.xpEarned ?? 0),
+    };
+  }
+  return daily;
+}
+
+export function mergeRecentAttempts(
+  account: AttemptPoint[],
+  guest: AttemptPoint[],
+): AttemptPoint[] {
+  const seen = new Set<string>();
+  const merged: AttemptPoint[] = [];
+  for (const point of [...account, ...guest].sort((a, b) => a.at.localeCompare(b.at))) {
+    const key = `${point.at}:${point.lessonId ?? ""}:${point.wpm}:${point.source}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    merged.push(point);
+  }
+  return merged.slice(-RECENT_ATTEMPTS_MAX);
+}
+
+function cloneAttempts(points: AttemptPoint[] | undefined): AttemptPoint[] {
+  return (points ?? []).map((point) => ({ ...point }));
+}
+
+function cloneDaily(daily: Record<string, DailyBucket> | undefined): Record<string, DailyBucket> {
+  return Object.fromEntries(
+    Object.entries(daily ?? {}).map(([date, row]) => [date, { ...row }]),
+  );
+}
+
 function lessonCompleted(row: GuestLessonProgress | undefined): boolean {
   return (row?.stars ?? 0) >= 1;
 }
@@ -150,6 +202,8 @@ export function mergeGuestIntoAccount(
         Object.entries(guest.keyStats).map(([key, row]) => [key, cloneKeyStat(row)]),
       ),
       streak: { ...guest.streak },
+      recentAttempts: cloneAttempts(guest.recentAttempts),
+      daily: cloneDaily(guest.daily),
     };
   }
 
@@ -183,5 +237,10 @@ export function mergeGuestIntoAccount(
     xp: Math.max(account.xp + newLessonXp, guest.xp),
     keyStats,
     streak: mergeStreak(account.streak, guest.streak),
+    recentAttempts: mergeRecentAttempts(
+      account.recentAttempts ?? [],
+      guest.recentAttempts ?? [],
+    ),
+    daily: mergeDaily(account.daily ?? {}, guest.daily ?? {}),
   };
 }

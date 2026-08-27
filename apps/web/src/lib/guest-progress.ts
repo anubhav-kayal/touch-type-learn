@@ -1,5 +1,7 @@
 import type { GuestKeyStat, GuestLessonProgress, GuestSnapshot, GuestStreak } from "@keypath/shared-types";
 import {
+  addDailyActivity,
+  appendAttemptPoint,
   applyKeyStatDelta,
   applyStreakOnPass,
   emptyProgressSnapshot,
@@ -146,6 +148,8 @@ export function recordGuestAttempt(input: {
   accuracy: number;
   xpAwarded?: number;
   keyStats?: Record<string, GuestKeyStat>;
+  durationMs?: number;
+  consistency?: number | null;
   now?: Date;
 }): GuestSnapshot {
   const current = readGuestSnapshot();
@@ -166,13 +170,82 @@ export function recordGuestAttempt(input: {
     }
   }
 
+  const characters = Object.values(input.keyStats ?? {}).reduce(
+    (sum, row) => sum + row.attempts,
+    0,
+  );
+  const durationMs = Math.max(0, input.durationMs ?? 0);
+  const now = input.now ?? new Date();
+  const hasSession = durationMs > 0 || characters > 0;
+
   const next: GuestSnapshot = {
     ...current,
     progress: { ...current.progress, [input.lessonId]: nextRow },
     keyStats,
     xp: current.xp + xpAwarded,
     streak:
-      input.stars >= 1 ? applyStreakOnPass(current.streak, input.now) : current.streak,
+      input.stars >= 1 ? applyStreakOnPass(current.streak, now) : current.streak,
+    recentAttempts: hasSession
+      ? appendAttemptPoint(current.recentAttempts ?? [], {
+          at: now.toISOString(),
+          lessonId: input.lessonId,
+          wpm: input.wpm,
+          accuracy: input.accuracy,
+          consistency: input.consistency ?? null,
+          durationMs,
+          characters,
+          source: "lesson",
+        })
+      : (current.recentAttempts ?? []),
+    daily: hasSession
+      ? addDailyActivity(current.daily ?? {}, {
+          now,
+          minutes: durationMs / 60_000,
+          characters,
+          lessonsCompleted: input.stars >= 1 ? 1 : 0,
+          xpEarned: xpAwarded,
+        })
+      : (current.daily ?? {}),
+  };
+  writeGuestSnapshot(next);
+  return next;
+}
+
+export function recordPracticeAttempt(input: {
+  wpm: number;
+  accuracy: number;
+  durationMs: number;
+  consistency?: number | null;
+  keyStats: Record<string, GuestKeyStat>;
+  now?: Date;
+}): GuestSnapshot {
+  const current = readGuestSnapshot();
+  const keyStats = { ...current.keyStats };
+  for (const row of Object.values(input.keyStats)) {
+    keyStats[row.key] = applyKeyStatDelta(keyStats[row.key], row);
+  }
+  const characters = Object.values(input.keyStats).reduce((sum, row) => sum + row.attempts, 0);
+  const now = input.now ?? new Date();
+  const next: GuestSnapshot = {
+    ...current,
+    keyStats,
+    recentAttempts: appendAttemptPoint(current.recentAttempts ?? [], {
+      at: now.toISOString(),
+      lessonId: null,
+      wpm: input.wpm,
+      accuracy: input.accuracy,
+      consistency: input.consistency ?? null,
+      durationMs: input.durationMs,
+      characters,
+      source: "practice",
+    }),
+    daily: addDailyActivity(current.daily ?? {}, {
+      now,
+      minutes: input.durationMs / 60_000,
+      characters,
+      lessonsCompleted: 0,
+      xpEarned: 0,
+    }),
   };
   writeGuestSnapshot(next);
   return next;
@@ -231,6 +304,8 @@ export function overlayAccountProgress(input: {
   xp: number;
   streak: GuestStreak;
   keyStats?: Record<string, GuestKeyStat>;
+  recentAttempts?: GuestSnapshot["recentAttempts"];
+  daily?: GuestSnapshot["daily"];
 }): void {
   overlayStars(input.stars);
   const current = readGuestSnapshot();
@@ -239,6 +314,8 @@ export function overlayAccountProgress(input: {
     xp: Math.max(current.xp, input.xp),
     streak: mergeStreak(current.streak, input.streak),
     keyStats: input.keyStats ?? current.keyStats,
+    recentAttempts: input.recentAttempts ?? current.recentAttempts,
+    daily: input.daily ?? current.daily,
   });
 }
 

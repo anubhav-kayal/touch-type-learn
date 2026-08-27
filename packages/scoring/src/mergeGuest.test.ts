@@ -55,6 +55,8 @@ describe("mergeGuestIntoAccount", () => {
       xp: 140,
       keyStats: incoming.keyStats,
       streak: incoming.streak,
+      recentAttempts: incoming.recentAttempts,
+      daily: incoming.daily,
     });
     expect(merged.progress["w1-orient"]).not.toBe(incoming.progress["w1-orient"]);
   });
