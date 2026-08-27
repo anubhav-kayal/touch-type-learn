@@ -22,6 +22,8 @@ export {
   isTypingExercise,
 } from "./allowedKeys";
 export { alternate, repeats, tokens, typing } from "./generate";
+export { generateWeakKeyDrill } from "./generatePractice";
+export { practiceAllowedKeys } from "./unlockedKeys";
 export {
   getCurrentLessonId,
   getNextLessonId,
