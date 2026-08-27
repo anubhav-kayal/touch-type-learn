@@ -7,6 +7,7 @@ import {
   readGuestSnapshot,
   readStars,
   recordGuestAttempt,
+  recordPracticeKeyStats,
   recordStars,
   starsFromSnapshot,
 } from "@/lib/guest-progress";
@@ -100,5 +101,16 @@ describe("guest snapshot", () => {
     expect(snapshot.progress["w1-orient"]?.xpEarned).toBe(65);
     expect(snapshot.streak.currentStreak).toBe(1);
     expect(snapshot.streak.lastPracticeDate).toBe("2026-08-27");
+  });
+
+  it("updates key stats from practice without XP or streak", () => {
+    recordPracticeKeyStats({
+      f: { key: "f", attempts: 12, correct: 10, errors: 2, averageLatencyMs: 200 },
+    });
+    const snapshot = readGuestSnapshot();
+    expect(snapshot.keyStats.f?.attempts).toBe(12);
+    expect(snapshot.xp).toBe(0);
+    expect(snapshot.streak.currentStreak).toBe(0);
+    expect(guestHasUnmigratedWork(snapshot)).toBe(true);
   });
 });

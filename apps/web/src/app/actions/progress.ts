@@ -3,9 +3,11 @@
 import { getLesson } from "@keypath/curriculum";
 import {
   applyStreakOnPass,
+  applyKeyStatDelta,
   calculateXp,
   emptyProgressSnapshot,
   levelFromXp,
+  masteryForKeyStat,
   mergeGuestIntoAccount,
   utcDateString,
 } from "@keypath/scoring";
@@ -28,6 +30,7 @@ type ProgressResult = {
   xp: number;
   level: number;
   streak: GuestStreak;
+  keyStats: Record<string, GuestKeyStat>;
 };
 
 function emptyProgressResult(ok = false): ProgressResult {
@@ -37,6 +40,7 @@ function emptyProgressResult(ok = false): ProgressResult {
     xp: 0,
     level: 1,
     streak: emptyProgressSnapshot().streak,
+    keyStats: {},
   };
 }
 
@@ -130,6 +134,7 @@ async function writeProgressSnapshot(
     correct: row.correct,
     errors: row.errors,
     ema_latency_ms: row.averageLatencyMs,
+    mastery_score: masteryForKeyStat(row),
     last_practiced_at: new Date().toISOString(),
   }));
   if (keyRows.length > 0) {
@@ -208,22 +213,28 @@ async function upsertAttemptAggregates(
       .eq("user_id", userId)
       .eq("key", stat.key)
       .maybeSingle();
-    const attempts = (current?.attempts ?? 0) + stat.attempts;
-    let ema = current?.ema_latency_ms ?? null;
-    if (stat.averageLatencyMs !== null) {
-      ema =
-        ema === null
-          ? stat.averageLatencyMs
-          : Number(ema) * 0.7 + stat.averageLatencyMs * 0.3;
-    }
+    const merged = applyKeyStatDelta(
+      current
+        ? {
+            key: current.key,
+            attempts: current.attempts,
+            correct: current.correct,
+            errors: current.errors,
+            averageLatencyMs:
+              current.ema_latency_ms === null ? null : Number(current.ema_latency_ms),
+          }
+        : undefined,
+      stat,
+    );
     await supabase.from("user_key_stats").upsert(
       {
         user_id: userId,
-        key: stat.key,
-        attempts,
-        correct: (current?.correct ?? 0) + stat.correct,
-        errors: (current?.errors ?? 0) + stat.errors,
-        ema_latency_ms: ema,
+        key: merged.key,
+        attempts: merged.attempts,
+        correct: merged.correct,
+        errors: merged.errors,
+        ema_latency_ms: merged.averageLatencyMs,
+        mastery_score: masteryForKeyStat(merged),
         last_practiced_at: now,
       },
       { onConflict: "user_id,key" },
@@ -367,6 +378,7 @@ function toProgressResult(snapshot: ProgressSnapshot): ProgressResult {
     xp: snapshot.xp,
     level: levelFromXp(snapshot.xp),
     streak: snapshot.streak,
+    keyStats: snapshot.keyStats,
   };
 }
 

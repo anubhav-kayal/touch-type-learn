@@ -1,5 +1,6 @@
 import type { GuestKeyStat, GuestLessonProgress, GuestSnapshot, GuestStreak } from "@keypath/shared-types";
 import {
+  applyKeyStatDelta,
   applyStreakOnPass,
   emptyProgressSnapshot,
   levelFromXp,
@@ -160,29 +161,8 @@ export function recordGuestAttempt(input: {
 
   const keyStats = { ...current.keyStats };
   if (input.keyStats) {
-    for (const [key, incoming] of Object.entries(input.keyStats)) {
-      const existing = keyStats[key];
-      if (!existing) {
-        keyStats[key] = { ...incoming };
-        continue;
-      }
-      const attempts = existing.attempts + incoming.attempts;
-      let averageLatencyMs = existing.averageLatencyMs;
-      if (existing.averageLatencyMs !== null && incoming.averageLatencyMs !== null) {
-        averageLatencyMs =
-          (existing.averageLatencyMs * existing.attempts +
-            incoming.averageLatencyMs * incoming.attempts) /
-          Math.max(attempts, 1);
-      } else {
-        averageLatencyMs = existing.averageLatencyMs ?? incoming.averageLatencyMs;
-      }
-      keyStats[key] = {
-        key,
-        attempts,
-        correct: existing.correct + incoming.correct,
-        errors: existing.errors + incoming.errors,
-        averageLatencyMs,
-      };
+    for (const incoming of Object.values(input.keyStats)) {
+      keyStats[incoming.key] = applyKeyStatDelta(keyStats[incoming.key], incoming);
     }
   }
 
@@ -196,6 +176,38 @@ export function recordGuestAttempt(input: {
   };
   writeGuestSnapshot(next);
   return next;
+}
+
+export function recordPracticeKeyStats(
+  incoming: Record<string, GuestKeyStat>,
+): GuestSnapshot {
+  const current = readGuestSnapshot();
+  const keyStats = { ...current.keyStats };
+  for (const row of Object.values(incoming)) {
+    keyStats[row.key] = applyKeyStatDelta(keyStats[row.key], row);
+  }
+  const next: GuestSnapshot = { ...current, keyStats };
+  writeGuestSnapshot(next);
+  return next;
+}
+
+const EMPTY_KEY_STATS: Record<string, GuestKeyStat> = {};
+let cachedKeyStats: Record<string, GuestKeyStat> = EMPTY_KEY_STATS;
+let cachedKeyStatsKey = "";
+
+export function readKeyStats(): Record<string, GuestKeyStat> {
+  const next = readGuestSnapshot().keyStats;
+  const key = JSON.stringify(next);
+  if (key === cachedKeyStatsKey) {
+    return cachedKeyStats;
+  }
+  cachedKeyStatsKey = key;
+  cachedKeyStats = Object.keys(next).length === 0 ? EMPTY_KEY_STATS : next;
+  return cachedKeyStats;
+}
+
+export function getServerKeyStats(): Record<string, GuestKeyStat> {
+  return EMPTY_KEY_STATS;
 }
 
 export function overlayStars(stars: Record<string, number>): void {
@@ -218,6 +230,7 @@ export function overlayAccountProgress(input: {
   stars: Record<string, number>;
   xp: number;
   streak: GuestStreak;
+  keyStats?: Record<string, GuestKeyStat>;
 }): void {
   overlayStars(input.stars);
   const current = readGuestSnapshot();
@@ -225,6 +238,7 @@ export function overlayAccountProgress(input: {
     ...current,
     xp: Math.max(current.xp, input.xp),
     streak: mergeStreak(current.streak, input.streak),
+    keyStats: input.keyStats ?? current.keyStats,
   });
 }
 
