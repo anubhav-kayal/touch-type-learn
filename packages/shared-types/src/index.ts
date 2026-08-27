@@ -16,8 +16,11 @@ export interface LessonAttemptSummary {
 }
 
 export type {
+  AchievementId,
   AttemptPoint,
   DailyBucket,
+  DailyChallengeId,
+  DailyChallengeState,
   GuestKeyStat,
   GuestLessonProgress,
   GuestSnapshot,

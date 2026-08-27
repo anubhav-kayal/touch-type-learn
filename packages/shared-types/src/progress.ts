@@ -21,6 +21,27 @@ export interface GuestStreak {
   practiceDaysMonth: number;
 }
 
+export type AchievementId =
+  | "first-lesson"
+  | "perfect-run"
+  | "speed-40"
+  | "speed-60"
+  | "speed-100"
+  | "home-row-hero"
+  | "marathon"
+  | "precision";
+
+export type DailyChallengeId = "words-200" | "weak-keys-3" | "lessons-3" | "pb-60s";
+
+export interface DailyChallengeState {
+  date: string;
+  challengeId: DailyChallengeId;
+  progress: number;
+  target: number;
+  completed: boolean;
+  xpAwarded: boolean;
+}
+
 export interface ProgressSnapshot {
   progress: Record<string, GuestLessonProgress>;
   xp: number;
@@ -28,6 +49,8 @@ export interface ProgressSnapshot {
   streak: GuestStreak;
   recentAttempts: AttemptPoint[];
   daily: Record<string, DailyBucket>;
+  achievements: Record<string, string>;
+  dailyChallenge: DailyChallengeState;
 }
 
 export interface AttemptPoint {
